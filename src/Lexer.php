@@ -125,6 +125,8 @@ class Lexer implements \IteratorAggregate
     private function initByteIterator()
     {
         $bytestream = $this->bytestream;
+
+        /** @var \Iterator $iterator */
         $iterator = ($bytestream instanceof \IteratorAggregate) ? $bytestream->getIterator() : $bytestream;
         $iterator->rewind();
         $this->byteIterator = $iterator;
@@ -196,17 +198,81 @@ class Lexer implements \IteratorAggregate
 
     }
 
+    /**
+     * Scans and evaluates the current number.
+     *
+     * Numbers in JSON match the regex:
+     *      -?(0|[1-9]\d*)(\.\d+)?([eE][-+]?\d+)?
+     *
+     * Doing it byte by byte is less fun, but here we are.
+     *
+     * @return int|float
+     * @throws ParseException
+     */
     private function evaluateNumber()
     {
-        //TODO: Implement.
         $iterator = $this->byteIterator;
+        $byte = $iterator->current();
+        assert($byte === "-" || ctype_digit($byte));
+        $buffer = "";
 
+        if ($byte === "-") {
+            $buffer .= $byte;
+            $iterator->next();
+            $byte = $iterator->current();
+        }
+
+        if ($byte === "0") {
+            $buffer .= $byte;
+            $iterator->next();
+            $byte = $iterator->current();
+        } elseif (ctype_digit($byte)) {
+            $buffer .= $this->scanDigits();
+            $byte = $iterator->current();
+        } else {
+            throw new ParseException($this->getExceptionMessage($byte));
+        }
+
+        if ($byte === "." ) {
+            $buffer .= $byte;
+            $iterator->next();
+            $byte = $iterator->current();
+            if (!ctype_digit($byte)) {
+                throw new ParseException($this->getExceptionMessage($byte));
+            }
+            $buffer .= $this->scanDigits();
+            $byte = $iterator->current();
+        }
+
+        if ($byte === "e" || $byte === "E") {
+            $buffer .= $byte;
+            $iterator->next();
+            $byte = $iterator->current();
+
+            if ($byte === "-" || $byte === "+") {
+                $buffer .= $byte;
+                $iterator->next();
+                $byte = $iterator->current();
+            }
+
+            if (!ctype_digit($byte)) {
+                throw new ParseException($this->getExceptionMessage($byte));
+            }
+            $buffer .= $this->scanDigits();
+        }
+
+        /** @noinspection PhpWrongStringConcatenationInspection
+         *
+         * `+ 0` automatically casts to float or int, as appropriate.
+         */
+        return $buffer + 0;
     }
 
     private function evaluateDoubleQuotedString() : string
     {
         $iterator = $this->byteIterator;
         $buffer = "";
+        assert($iterator->current() === '"');
         $iterator->next(); //Skip initial "
 
         while ($iterator->valid()) {
@@ -258,6 +324,19 @@ class Lexer implements \IteratorAggregate
         }
 
         return \IntlChar::chr($codepoint);
+    }
+
+    private function scanDigits() : string
+    {
+        $iterator = $this->byteIterator;
+        $digits = "";
+
+        while (ctype_digit($iterator->current())) {
+            $digits .= $iterator->current();
+            $iterator->next();
+        }
+
+        return $digits;
     }
 
     /**
