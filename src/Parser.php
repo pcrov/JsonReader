@@ -2,13 +2,7 @@
 
 namespace JsonReader;
 
-//TODO: Everything.
-class Parser
+interface Parser extends \Traversable
 {
-    private $lexer;
-
-    public function __construct(\Traversable $lexer)
-    {
-        $this->lexer = $lexer;
-    }
+    public function getValue();
 }

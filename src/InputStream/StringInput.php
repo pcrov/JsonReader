@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader;
+namespace JsonReader\InputStream;
 
-class StringInputStream implements \IteratorAggregate
+class StringInput implements \IteratorAggregate
 {
     private $string;
 

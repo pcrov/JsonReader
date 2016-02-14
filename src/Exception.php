@@ -2,7 +2,7 @@
 
 namespace JsonReader;
 
-class ParseException extends \Exception
+class Exception extends \Exception
 {
 
 }

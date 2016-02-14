@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader;
+namespace JsonReader\InputStream;
 
-class FileInputStream implements \IteratorAggregate
+class File implements \IteratorAggregate
 {
     private $uri;
 
