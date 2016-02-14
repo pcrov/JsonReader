@@ -1,6 +1,6 @@
 Work in progress.
 
-This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON. It even keeps the relevant bits of the interface the same.
+This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON. It even keeps some relevant bits of the interface the same.
 
 Only supports UTF-8 encoded JSON.
 

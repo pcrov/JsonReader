@@ -11,9 +11,6 @@ use JsonReader\Parser\Lexer;
 /**
  * Class JsonReader
  * @package JsonReader
- * @property-read int $nodeType
- * @property-read string $name
- * @property-read mixed $value
  */
 class JsonReader
 {
@@ -85,14 +82,26 @@ class JsonReader
     }
 
     /**
-     * @internal
-     *
-     * We're using this instead of proper getters *only* to maintain api similarity with XMLReader.
-     *
-     * @param $name
+     * @return int
      */
-    public function __get($name)
+    public function getNodeType() : int
     {
-        // TODO: Implement __get() method.
+
+    }
+
+    /**
+     * @return string
+     */
+    public function getName() : string
+    {
+
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getValue()
+    {
+
     }
 }
