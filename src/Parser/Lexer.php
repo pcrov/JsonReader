@@ -63,47 +63,47 @@ class Lexer implements \IteratorAggregate
                     $this->consumeCarriageReturn();
                     break;
                 case ":":
-                    yield Token::COLON => null;
+                    yield Token::T_COLON => null;
                     $iterator->next();
                     break;
                 case ",":
-                    yield Token::COMMA => null;
+                    yield Token::T_COMMA => null;
                     $iterator->next();
                     break;
                 case "[":
-                    yield Token::BEGIN_ARRAY => null;
+                    yield Token::T_BEGIN_ARRAY => null;
                     $iterator->next();
                     break;
                 case "]":
-                    yield Token::END_ARRAY => null;
+                    yield Token::T_END_ARRAY => null;
                     $iterator->next();
                     break;
                 case "{":
-                    yield Token::BEGIN_OBJECT => null;
+                    yield Token::T_BEGIN_OBJECT => null;
                     $iterator->next();
                     break;
                 case "}":
-                    yield Token::END_OBJECT => null;
+                    yield Token::T_END_OBJECT => null;
                     $iterator->next();
                     break;
                 case "t":
                     $this->consumeString("true");
-                    yield Token::TRUE => true;
+                    yield Token::T_TRUE => true;
                     break;
                 case "f":
                     $this->consumeString("false");
-                    yield Token::FALSE => false;
+                    yield Token::T_FALSE => false;
                     break;
                 case "n":
                     $this->consumeString("null");
-                    yield Token::NULL => null;
+                    yield Token::T_NULL => null;
                     break;
                 case '"':
-                    yield Token::STRING => $this->evaluateDoubleQuotedString();
+                    yield Token::T_STRING => $this->evaluateDoubleQuotedString();
                     break;
                 default:
                     if (ctype_digit($byte) || $byte === "-") {
-                        yield Token::NUMBER => $this->evaluateNumber();
+                        yield Token::T_NUMBER => $this->evaluateNumber();
                     } else {
                         throw new ParseException($this->getExceptionMessage($byte));
                     }
