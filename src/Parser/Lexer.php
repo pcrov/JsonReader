@@ -233,7 +233,7 @@ class Lexer implements \IteratorAggregate
             throw new ParseException($this->getExceptionMessage($byte));
         }
 
-        if ($byte === "." ) {
+        if ($byte === ".") {
             $buffer .= $byte;
             $iterator->next();
             $byte = $iterator->current();
@@ -292,7 +292,8 @@ class Lexer implements \IteratorAggregate
             $iterator->next();
         }
 
-        throw new ParseException($this->getExceptionMessage("EOF"));
+        // Unexpected end of file.
+        throw new ParseException($this->getExceptionMessage());
     }
 
     private function evaluateUnicodeSequence() : string
@@ -324,6 +325,54 @@ class Lexer implements \IteratorAggregate
         }
 
         return \IntlChar::chr($codepoint);
+    }
+
+    /**
+     * Scans a single UTF-8 codepoint, which can be up to four bytes long.
+     *
+     * The cursor should be at the beginning of a valid UTF-8 sequence.
+     * A partial codepoint or invalid UTF-8 byte will be returned as-is.
+     *
+     *  0xxx xxxx   Single-byte codepoint.
+     *  110x xxxx   First of a two-byte codepoint.
+     *  1110 xxxx   First of three.
+     *  1111 0xxx   First of four.
+     *  10xx xxxx   A continuation of any of the three preceding.
+     *
+     * @see https://en.wikipedia.org/wiki/UTF-8#Description
+     *
+     * @return string The scanned full or partial codepoint, or invalid UTF-8 byte.
+     */
+    private function scanCodepoint() : string
+    {
+        $iterator = $this->byteIterator;
+        $codepoint = $iterator->current();
+        $iterator->next();
+        $ord = ord($codepoint);
+
+        if (!(($ord >> 5) ^ 0b110)) {
+            $expect = 1;
+        } elseif (!(($ord >> 4) ^ 0b1110)) {
+            $expect = 2;
+        } elseif (!(($ord >> 3) ^ 0b11110)) {
+            $expect = 3;
+        } else {
+            return $codepoint;
+        }
+
+        while ($iterator->valid() && $expect > 0) {
+            $byte = $iterator->current();
+
+            if ((ord($byte) >> 6) ^ 0b10) {
+                break;
+            }
+
+            $codepoint .= $byte;
+            $iterator->next();
+            $expect--;
+        }
+
+        return $codepoint;
     }
 
     private function scanDigits() : string
@@ -391,30 +440,26 @@ class Lexer implements \IteratorAggregate
             );
         }
 
-        //TODO: Grab any non-printable here, not just low control characters.
-        if ($byte < "\x1f") {
+        $codepoint = $this->scanCodepoint();
+        $ord = \IntlChar::ord($codepoint);
+
+        if ($ord === null) {
             return sprintf(
-                "Line %d: Unexpected control character 0x%x.",
-                $this->line, ord($byte)
+                "Line %d: Malformed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
+                $this->line, ...array_map("ord", str_split($codepoint))
             );
         }
 
-        /*
-         * TODO: Fill multi-byte character.
-         *
-         * We've only got one byte here, which isn't so useful in
-         * an exception message if it's a multi-byte character.
-         *
-         * UTF-8 makes it easy to tell if we need more and how much:
-         *      0xxx xxxx   Single-byte character
-         *      110x xxxx   One more byte to come
-         *      1110 xxxx   Two more
-         *      1111 0xxx   Three more
-         *      10xx xxxx   A continuation of any of the three preceding
-         */
-        return sprintf(
-            "Line %d: Unexpected '%s'.",
-            $this->line, $byte
-        );
+        if (\IntlChar::isprint($codepoint)) {
+            return sprintf(
+                "Line %d: Unexpected '%s'.",
+                $this->line, $codepoint
+            );
+        } else {
+            return sprintf(
+                "Line %d: Unexpected control character \\u{%x}.",
+                $this->line, $ord
+            );
+        }
     }
 }
