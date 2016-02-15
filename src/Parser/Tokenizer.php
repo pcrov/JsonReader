@@ -2,7 +2,7 @@
 
 namespace JsonReader\Parser;
 
-abstract class Token
+interface Tokenizer
 {
     const T_STRING = 1;
     const T_NUMBER = 2;
@@ -29,4 +29,9 @@ abstract class Token
         self::T_BEGIN_OBJECT => "T_BEGIN_OBJECT",
         self::T_END_OBJECT => "T_END_OBJECT"
     ];
+
+    /**
+     * @return int Current line number.
+     */
+    public function getLineNumber() : int;
 }

@@ -4,7 +4,7 @@ namespace JsonReader;
 
 use JsonReader\InputStream\File;
 use JsonReader\InputStream\StringInput;
-use JsonReader\Parser\JsonParser;
+use JsonReader\Parser\Parser;
 use JsonReader\Parser\Lexer;
 
 //TODO: Almost everything.
@@ -29,9 +29,9 @@ class JsonReader
     private $parser;
 
     /**
-     * @param Parser $parser
+     * @param \Traversable $parser
      */
-    public function init(Parser $parser)
+    public function init(\Traversable $parser)
     {
         $this->close();
         $this->parser = $parser;
@@ -53,7 +53,7 @@ class JsonReader
      */
     public function json(string $json)
     {
-        $this->init(new JsonParser(new Lexer(new StringInput($json))));
+        $this->init(new Parser(new Lexer(new StringInput($json))));
     }
 
     /**
@@ -70,7 +70,7 @@ class JsonReader
      */
     public function open(string $uri)
     {
-        $this->init(new JsonParser(new Lexer(new File($uri))));
+        $this->init(new Parser(new Lexer(new File($uri))));
     }
 
     /**

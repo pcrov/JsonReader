@@ -9,7 +9,7 @@ namespace JsonReader\Parser;
  *
  * @package JsonReader
  */
-class Lexer implements \IteratorAggregate
+class Lexer implements \IteratorAggregate, Tokenizer
 {
     /**
      * @var \Traversable
@@ -63,47 +63,47 @@ class Lexer implements \IteratorAggregate
                     $this->consumeCarriageReturn();
                     break;
                 case ":":
-                    yield Token::T_COLON => null;
+                    yield self::T_COLON => null;
                     $iterator->next();
                     break;
                 case ",":
-                    yield Token::T_COMMA => null;
+                    yield self::T_COMMA => null;
                     $iterator->next();
                     break;
                 case "[":
-                    yield Token::T_BEGIN_ARRAY => null;
+                    yield self::T_BEGIN_ARRAY => null;
                     $iterator->next();
                     break;
                 case "]":
-                    yield Token::T_END_ARRAY => null;
+                    yield self::T_END_ARRAY => null;
                     $iterator->next();
                     break;
                 case "{":
-                    yield Token::T_BEGIN_OBJECT => null;
+                    yield self::T_BEGIN_OBJECT => null;
                     $iterator->next();
                     break;
                 case "}":
-                    yield Token::T_END_OBJECT => null;
+                    yield self::T_END_OBJECT => null;
                     $iterator->next();
                     break;
                 case "t":
                     $this->consumeString("true");
-                    yield Token::T_TRUE => true;
+                    yield self::T_TRUE => true;
                     break;
                 case "f":
                     $this->consumeString("false");
-                    yield Token::T_FALSE => false;
+                    yield self::T_FALSE => false;
                     break;
                 case "n":
                     $this->consumeString("null");
-                    yield Token::T_NULL => null;
+                    yield self::T_NULL => null;
                     break;
                 case '"':
-                    yield Token::T_STRING => $this->evaluateDoubleQuotedString();
+                    yield self::T_STRING => $this->evaluateDoubleQuotedString();
                     break;
                 default:
                     if (ctype_digit($byte) || $byte === "-") {
-                        yield Token::T_NUMBER => $this->evaluateNumber();
+                        yield self::T_NUMBER => $this->evaluateNumber();
                     } else {
                         throw new ParseException($this->getExceptionMessage($byte));
                     }
@@ -111,9 +111,6 @@ class Lexer implements \IteratorAggregate
         }
     }
 
-    /**
-     * @return int Current line number.
-     */
     public function getLineNumber() : int
     {
         return $this->line;
