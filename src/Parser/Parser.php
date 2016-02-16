@@ -53,6 +53,17 @@ class Parser implements \IteratorAggregate
         }
     }
 
+    private function consumeComma() : bool
+    {
+        $iterator = $this->tokenIterator;
+        $token = $iterator->key();
+        if ($token === Tokenizer::T_COMMA) {
+            $iterator->next();
+            return true;
+        }
+        return false;
+    }
+
     private function initLexer()
     {
         $tokenizer = $this->tokenizer;
@@ -75,12 +86,56 @@ class Parser implements \IteratorAggregate
 
     private function parseArray() : \Generator
     {
+        $iterator = $this->tokenIterator;
+        $this->depth++;
 
+        if ($iterator->key() !== Tokenizer::T_END_ARRAY) {
+            do {
+                yield from $this->parseValue();
+            } while ($this->consumeComma());
+        }
+
+        $token = $iterator->key();
+        if ($token !== Tokenizer::T_END_ARRAY) {
+            throw new ParseException($this->getExceptionMessage($token));
+        }
+        $iterator->next();
+        $this->depth--;
     }
 
     private function parseObject() : \Generator
     {
+        $iterator = $this->tokenIterator;
+        $this->depth++;
 
+        if ($iterator->key() !== Tokenizer::T_END_OBJECT) {
+            do {
+                //Property name
+                $token = $iterator->key();
+                if ($token !== Tokenizer::T_STRING) {
+                    throw new ParseException($this->getExceptionMessage($token));
+                }
+                $this->name = $iterator->current();
+                $iterator->next();
+
+                //Name:value separator
+                $token = $iterator->key();
+                if ($token !== Tokenizer::T_COLON) {
+                    throw new ParseException($this->getExceptionMessage($token));
+                }
+                $iterator->next();
+
+                //Value
+                yield from $this->parseValue();
+            } while ($this->consumeComma());
+        }
+
+        $token = $iterator->key();
+        if ($token !== Tokenizer::T_END_OBJECT) {
+            throw new ParseException($this->getExceptionMessage($token));
+        }
+        $iterator->next();
+        $this->depth--;
     }
 
     private function parseValue() : \Generator
