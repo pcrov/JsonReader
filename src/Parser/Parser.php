@@ -4,6 +4,13 @@ namespace JsonReader\Parser;
 
 class Parser implements \IteratorAggregate
 {
+    const STRING = 1;
+    const NUMBER = 2;
+    const BOOL = 3;
+    const NULL = 4;
+    const ARRAY = 5;
+    const OBJECT = 6;
+
     /**
      * @var Tokenizer
      */
@@ -149,22 +156,34 @@ class Parser implements \IteratorAggregate
 
         switch ($token) {
             case Tokenizer::T_STRING:
+                yield [self::STRING, $name, $value, $depth];
+                $this->name = null;
+                $iterator->next();
+                break;
             case Tokenizer::T_NUMBER:
+                yield [self::NUMBER, $name, $value, $depth];
+                $this->name = null;
+                $iterator->next();
+                break;
             case Tokenizer::T_TRUE:
             case Tokenizer::T_FALSE:
+                yield [self::BOOL, $name, $value, $depth];
+                $this->name = null;
+                $iterator->next();
+            break;
             case Tokenizer::T_NULL:
-                yield [$token, $name, $value, $depth];
+                yield [self::NULL, $name, $value, $depth];
                 $this->name = null;
                 $iterator->next();
                 break;
             case Tokenizer::T_BEGIN_ARRAY:
-                yield [$token, $name, $value, $depth];
+                yield [self::ARRAY, $name, $value, $depth];
                 $this->name = null;
                 $iterator->next();
                 yield from $this->parseArray();
                 break;
             case Tokenizer::T_BEGIN_OBJECT:
-                yield [$token, $name, $value, $depth];
+                yield [self::OBJECT, $name, $value, $depth];
                 $this->name = null;
                 $iterator->next();
                 yield from $this->parseObject();

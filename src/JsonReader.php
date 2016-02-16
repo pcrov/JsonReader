@@ -14,14 +14,12 @@ use JsonReader\Parser\Lexer;
  */
 class JsonReader
 {
-    const NONE = 0;
     const STRING = 1;
     const NUMBER = 2;
-    const OBJECT = 3;
-    const ARRAY = 4;
-    const BOOL = 5;
-    const NULL = 6;
-
+    const BOOL = 3;
+    const NULL = 4;
+    const ARRAY = 5;
+    const OBJECT = 6;
 
     /**
      * @var Parser
