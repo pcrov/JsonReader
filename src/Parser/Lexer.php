@@ -117,16 +117,19 @@ class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Do late initialization as some bytestreams may want to wait to open resources until they're needed.
+     * Consumes the current \r as well as a single immediately
+     * following \n in order to treat \r\n as one newline.
      */
-    private function initByteIterator()
+    private function consumeCarriageReturn()
     {
-        $bytestream = $this->bytestream;
+        $iterator = $this->byteIterator;
+        assert($iterator->current() === "\r");
 
-        /** @var \Iterator $iterator */
-        $iterator = ($bytestream instanceof \IteratorAggregate) ? $bytestream->getIterator() : $bytestream;
-        $iterator->rewind();
-        $this->byteIterator = $iterator;
+        $this->line++;
+        $iterator->next();
+        if ($iterator->current() === "\n") {
+            $iterator->next();
+        }
     }
 
     /**
@@ -149,26 +152,11 @@ class Lexer implements \IteratorAggregate, Tokenizer
         }
     }
 
-    /**
-     * Consumes the current \r as well as a single immediately
-     * following \n in order to treat \r\n as a single newline.
-     */
-    private function consumeCarriageReturn()
-    {
-        $iterator = $this->byteIterator;
-        assert($iterator->current() === "\r");
-
-        $this->line++;
-        $iterator->next();
-        if ($iterator->current() === "\n") {
-            $iterator->next();
-        }
-    }
-
     private function evaluateEscapeSequence() : string
     {
         $iterator = $this->byteIterator;
-        $iterator->next(); //Skip initial \
+        assert($iterator->current() === "\\");
+        $iterator->next();
         $byte = $iterator->current();
 
         switch ($byte) {
@@ -193,6 +181,34 @@ class Lexer implements \IteratorAggregate, Tokenizer
                 throw new ParseException($this->getExceptionMessage($byte));
         }
 
+    }
+
+    private function evaluateDoubleQuotedString() : string
+    {
+        $iterator = $this->byteIterator;
+        $buffer = "";
+        assert($iterator->current() === '"');
+        $iterator->next(); //Skip initial "
+
+        while ($iterator->valid()) {
+            $byte = $iterator->current();
+
+            if ($byte === '"') {
+                $iterator->next();
+                return $buffer;
+            }
+
+            if ($byte < "\x1f") {
+                throw new ParseException($this->getExceptionMessage($byte));
+            }
+
+            $buffer .= ($byte === "\\") ? $this->evaluateEscapeSequence() : $byte;
+
+            $iterator->next();
+        }
+
+        // Unexpected end of file.
+        throw new ParseException($this->getExceptionMessage());
     }
 
     /**
@@ -265,34 +281,6 @@ class Lexer implements \IteratorAggregate, Tokenizer
         return $buffer + 0;
     }
 
-    private function evaluateDoubleQuotedString() : string
-    {
-        $iterator = $this->byteIterator;
-        $buffer = "";
-        assert($iterator->current() === '"');
-        $iterator->next(); //Skip initial "
-
-        while ($iterator->valid()) {
-            $byte = $iterator->current();
-
-            if ($byte === '"') {
-                $iterator->next();
-                return $buffer;
-            }
-
-            if ($byte < "\x1f") {
-                throw new ParseException($this->getExceptionMessage($byte));
-            }
-
-            $buffer .= ($byte === "\\") ? $this->evaluateEscapeSequence() : $byte;
-
-            $iterator->next();
-        }
-
-        // Unexpected end of file.
-        throw new ParseException($this->getExceptionMessage());
-    }
-
     private function evaluateUnicodeSequence() : string
     {
         $codepoint = hexdec($this->scanUnicodeSequence());
@@ -322,6 +310,48 @@ class Lexer implements \IteratorAggregate, Tokenizer
         }
 
         return \IntlChar::chr($codepoint);
+    }
+
+    private function getExceptionMessage(string $byte = null) : string
+    {
+        if ($byte === null) {
+            return sprintf(
+                "Line %d: Unexpected end of file.",
+                $this->line
+            );
+        }
+
+        $codepoint = $this->scanCodepoint();
+        $ord = \IntlChar::ord($codepoint);
+
+        if ($ord === null) {
+            return sprintf(
+                "Line %d: Malformed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
+                $this->line, ...array_map("ord", str_split($codepoint))
+            );
+        }
+
+        if (\IntlChar::isprint($codepoint)) {
+            return sprintf(
+                "Line %d: Unexpected '%s'.",
+                $this->line, $codepoint
+            );
+        }
+
+        return sprintf(
+            "Line %d: Unexpected control character \\u{%x}.",
+            $this->line, $ord
+        );
+    }
+
+    private function initByteIterator()
+    {
+        $bytestream = $this->bytestream;
+
+        /** @var \Iterator $iterator */
+        $iterator = ($bytestream instanceof \IteratorAggregate) ? $bytestream->getIterator() : $bytestream;
+        $iterator->rewind();
+        $this->byteIterator = $iterator;
     }
 
     /**
@@ -426,37 +456,5 @@ class Lexer implements \IteratorAggregate, Tokenizer
         assert($low >= 0xdc00 && $low <= 0xdfff, "Low surrogate out of range.");
 
         return 0x10000 + (($high & 0x03ff) << 10) + ($low & 0x03ff);
-    }
-
-    private function getExceptionMessage(string $byte = null)
-    {
-        if ($byte === null) {
-            return sprintf(
-                "Line %d: Unexpected end of file.",
-                $this->line
-            );
-        }
-
-        $codepoint = $this->scanCodepoint();
-        $ord = \IntlChar::ord($codepoint);
-
-        if ($ord === null) {
-            return sprintf(
-                "Line %d: Malformed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
-                $this->line, ...array_map("ord", str_split($codepoint))
-            );
-        }
-
-        if (\IntlChar::isprint($codepoint)) {
-            return sprintf(
-                "Line %d: Unexpected '%s'.",
-                $this->line, $codepoint
-            );
-        } else {
-            return sprintf(
-                "Line %d: Unexpected control character \\u{%x}.",
-                $this->line, $ord
-            );
-        }
     }
 }
