@@ -1,6 +1,6 @@
 Work in progress.
 
-This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON. It even keeps some relevant bits of the interface the same.
+This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON.
 
 Assumes UTF-8 encoded JSON, though does not strictly enforce it.
 
@@ -15,4 +15,4 @@ Objects will be returned as associative arrays. This is to avoid dealing with a 
  
     Alternatives: instead cache the string until the cursor moves beyond that subtree, reparsing as we go; or when returning a compound type hit it with something like `unserialize(serialize($node))` to force a deep clone of all things therein. Neither performance hit seems worth it just so that objects can be returned safely.
 
-I'm not terribly keen on those alternatives, and we lose nothing I'm aware of by returning associative arrays instead, but I'm open to suggestions.
+I'm not terribly keen on those alternatives, and we lose nothing by returning associative arrays instead, but I'm open to suggestions.

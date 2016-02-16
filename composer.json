@@ -4,6 +4,7 @@
     "description": "JSON Pull Parser",
     "keywords": [
         "json",
+        "streaming",
         "pull",
         "parser"
     ],
