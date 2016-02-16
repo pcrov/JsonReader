@@ -9,7 +9,9 @@ class Parser implements \IteratorAggregate
     const BOOL = 3;
     const NULL = 4;
     const ARRAY = 5;
-    const OBJECT = 6;
+    const END_ARRAY = 6;
+    const OBJECT = 7;
+    const END_OBJECT = 8;
 
     /**
      * @var Tokenizer
@@ -41,14 +43,14 @@ class Parser implements \IteratorAggregate
      *  [$type, $name, $value, $depth]
      *
      * Objects and arrays will have no value. The consumer should use a tree builder
-     * to flesh these out based on the yielded depth.
+     * to flesh these out as desired.
      *
      * @return \Generator
      * @throws ParseException
      */
     public function getIterator() : \Generator
     {
-        $this->initLexer();
+        $this->initTokenizer();
         $this->name = null;
         $this->depth = 0;
         $iterator = $this->tokenIterator;
@@ -63,15 +65,14 @@ class Parser implements \IteratorAggregate
     private function consumeComma() : bool
     {
         $iterator = $this->tokenIterator;
-        $token = $iterator->key();
-        if ($token === Tokenizer::T_COMMA) {
+        if ($iterator->key() === Tokenizer::T_COMMA) {
             $iterator->next();
             return true;
         }
         return false;
     }
 
-    private function initLexer()
+    private function initTokenizer()
     {
         $tokenizer = $this->tokenizer;
 
@@ -84,6 +85,14 @@ class Parser implements \IteratorAggregate
     private function getExceptionMessage(int $token = null) : string
     {
         $tokenizer = $this->tokenizer;
+
+        if ($token === null) {
+            return sprintf(
+                "Line %d: Unexpected end of file.",
+                $tokenizer->getLineNumber()
+            );
+        }
+
         return sprintf(
             "Line %d: Unexpected token %s.",
             $tokenizer->getLineNumber(),
@@ -94,7 +103,14 @@ class Parser implements \IteratorAggregate
     private function parseArray() : \Generator
     {
         $iterator = $this->tokenIterator;
+        assert($iterator->key() === Tokenizer::T_BEGIN_ARRAY);
+
+        $name = $this->name;
+        yield [self::ARRAY, $name, null, $this->depth];
+
+        $this->name = null;
         $this->depth++;
+        $iterator->next();
 
         if ($iterator->key() !== Tokenizer::T_END_ARRAY) {
             do {
@@ -103,46 +119,62 @@ class Parser implements \IteratorAggregate
         }
 
         $token = $iterator->key();
-        if ($token !== Tokenizer::T_END_ARRAY) {
+        if ($token === Tokenizer::T_END_ARRAY) {
+            $this->depth--;
+            yield [self::END_ARRAY, $name, null, $this->depth];
+            $iterator->next();
+        } else {
             throw new ParseException($this->getExceptionMessage($token));
         }
-        $iterator->next();
-        $this->depth--;
     }
 
     private function parseObject() : \Generator
     {
         $iterator = $this->tokenIterator;
+        assert($iterator->key() === Tokenizer::T_BEGIN_OBJECT);
+
+        $name = $this->name;
+        yield [self::OBJECT, $name, null, $this->depth];
+
+        $this->name = null;
         $this->depth++;
+        $iterator->next();
 
-        if ($iterator->key() !== Tokenizer::T_END_OBJECT) {
+        // name:value property pairs
+        if ($iterator->key() === Tokenizer::T_STRING) {
             do {
-                //Property name
-                $token = $iterator->key();
-                if ($token !== Tokenizer::T_STRING) {
-                    throw new ParseException($this->getExceptionMessage($token));
-                }
-                $this->name = $iterator->current();
-                $iterator->next();
-
-                //Name:value separator
-                $token = $iterator->key();
-                if ($token !== Tokenizer::T_COLON) {
-                    throw new ParseException($this->getExceptionMessage($token));
-                }
-                $iterator->next();
-
-                //Value
-                yield from $this->parseValue();
+                yield from $this->parsePair();
             } while ($this->consumeComma());
         }
 
         $token = $iterator->key();
-        if ($token !== Tokenizer::T_END_OBJECT) {
+        if ($token === Tokenizer::T_END_OBJECT) {
+            $this->depth--;
+            yield [self::END_OBJECT, $name, null, $this->depth];
+            $iterator->next();
+        } else {
+            throw new ParseException($this->getExceptionMessage($token));
+        }
+    }
+
+    private function parsePair() : \Generator
+    {
+        $iterator = $this->tokenIterator;
+        assert($iterator->key() === Tokenizer::T_STRING);
+
+        // name
+        $this->name = $iterator->current();
+        $iterator->next();
+
+        // :
+        $token = $iterator->key();
+        if ($token !== Tokenizer::T_COLON) {
             throw new ParseException($this->getExceptionMessage($token));
         }
         $iterator->next();
-        $this->depth--;
+
+        // value
+        yield from $this->parseValue();
     }
 
     private function parseValue() : \Generator
@@ -177,15 +209,9 @@ class Parser implements \IteratorAggregate
                 $iterator->next();
                 break;
             case Tokenizer::T_BEGIN_ARRAY:
-                yield [self::ARRAY, $name, $value, $depth];
-                $this->name = null;
-                $iterator->next();
                 yield from $this->parseArray();
                 break;
             case Tokenizer::T_BEGIN_OBJECT:
-                yield [self::OBJECT, $name, $value, $depth];
-                $this->name = null;
-                $iterator->next();
                 yield from $this->parseObject();
                 break;
             default:
