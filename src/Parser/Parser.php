@@ -2,16 +2,24 @@
 
 namespace JsonReader\Parser;
 
-class Parser implements \IteratorAggregate
+use JsonReader\NodeTypes;
+
+class Parser implements \IteratorAggregate, NodeTypes
 {
-    const STRING = 1;
-    const NUMBER = 2;
-    const BOOL = 3;
-    const NULL = 4;
-    const ARRAY = 5;
-    const END_ARRAY = 6;
-    const OBJECT = 7;
-    const END_OBJECT = 8;
+    /**
+     * @var array Map of tokens to node types.
+     */
+    private $tokenTypeMap = [
+        Tokenizer::T_STRING => self::STRING,
+        Tokenizer::T_NUMBER => self::NUMBER,
+        Tokenizer::T_TRUE => self::BOOL,
+        Tokenizer::T_FALSE => self::BOOL,
+        Tokenizer::T_NULL => self::NULL,
+        Tokenizer::T_BEGIN_ARRAY => self::ARRAY,
+        Tokenizer::T_END_ARRAY => self::END_ARRAY,
+        Tokenizer::T_BEGIN_OBJECT => self::OBJECT,
+        Tokenizer::T_END_OBJECT => self::END_OBJECT
+    ];
 
     /**
      * @var Tokenizer
@@ -72,16 +80,6 @@ class Parser implements \IteratorAggregate
         return false;
     }
 
-    private function initTokenizer()
-    {
-        $tokenizer = $this->tokenizer;
-
-        /** @var \Iterator $iterator */
-        $iterator = ($tokenizer instanceof \IteratorAggregate) ? $tokenizer->getIterator() : $tokenizer;
-        $iterator->rewind();
-        $this->tokenIterator = $iterator;
-    }
-
     private function getExceptionMessage(int $token = null) : string
     {
         $tokenizer = $this->tokenizer;
@@ -98,6 +96,16 @@ class Parser implements \IteratorAggregate
             $tokenizer->getLineNumber(),
             $tokenizer::NAMES[$token]
         );
+    }
+
+    private function initTokenizer()
+    {
+        $tokenizer = $this->tokenizer;
+
+        /** @var \Iterator $iterator */
+        $iterator = ($tokenizer instanceof \IteratorAggregate) ? $tokenizer->getIterator() : $tokenizer;
+        $iterator->rewind();
+        $this->tokenIterator = $iterator;
     }
 
     private function parseArray() : \Generator
@@ -136,7 +144,6 @@ class Parser implements \IteratorAggregate
         $name = $this->name;
         yield [self::OBJECT, $name, null, $this->depth];
 
-        $this->name = null;
         $this->depth++;
         $iterator->next();
 
@@ -175,6 +182,7 @@ class Parser implements \IteratorAggregate
 
         // value
         yield from $this->parseValue();
+        $this->name = null;
     }
 
     private function parseValue() : \Generator
@@ -182,30 +190,13 @@ class Parser implements \IteratorAggregate
         $iterator = $this->tokenIterator;
 
         $token = $iterator->key();
-        $name = $this->name;
-        $value = $iterator->current();
-        $depth = $this->depth;
-
         switch ($token) {
             case Tokenizer::T_STRING:
-                yield [self::STRING, $name, $value, $depth];
-                $this->name = null;
-                $iterator->next();
-                break;
             case Tokenizer::T_NUMBER:
-                yield [self::NUMBER, $name, $value, $depth];
-                $this->name = null;
-                $iterator->next();
-                break;
             case Tokenizer::T_TRUE:
             case Tokenizer::T_FALSE:
-                yield [self::BOOL, $name, $value, $depth];
-                $this->name = null;
-                $iterator->next();
-            break;
             case Tokenizer::T_NULL:
-                yield [self::NULL, $name, $value, $depth];
-                $this->name = null;
+                yield [$this->tokenTypeMap[$token], $this->name, $iterator->current(), $this->depth];
                 $iterator->next();
                 break;
             case Tokenizer::T_BEGIN_ARRAY:

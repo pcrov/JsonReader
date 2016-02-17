@@ -11,21 +11,8 @@ use JsonReader\Parser\Lexer;
  * Class JsonReader
  * @package JsonReader
  */
-class JsonReader
+class JsonReader implements NodeTypes
 {
-    /*
-     * Duplicating the parser type constants here to give reader users a single, simple api.
-     * They shouldn't concern themselves with the parser unless they want to.
-     */
-    const STRING = 1;
-    const NUMBER = 2;
-    const BOOL = 3;
-    const NULL = 4;
-    const ARRAY = 5;
-    const END_ARRAY = 6;
-    const OBJECT = 7;
-    const END_OBJECT = 8;
-
     /**
      * @var Parser
      */
