@@ -22,6 +22,7 @@ class File implements \IteratorAggregate
             while (!feof($handle)) {
                 $buffer = fread($handle, 8192);
                 $length = strlen($buffer);
+                /** @noinspection ForeachInvariantsInspection */
                 for ($i = 0; $i < $length; $i++) {
                     yield $buffer[$i];
                 }

@@ -102,7 +102,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
                     yield self::T_STRING => $this->evaluateDoubleQuotedString();
                     break;
                 default:
-                    if (ctype_digit($byte) || $byte === "-") {
+                    if ($byte === "-" || ctype_digit($byte)) {
                         yield self::T_NUMBER => $this->evaluateNumber();
                     } else {
                         throw new ParseException($this->getExceptionMessage($byte));
@@ -143,6 +143,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
         $iterator = $this->byteIterator;
         $length = strlen($string);
 
+        /** @noinspection ForeachInvariantsInspection */
         for ($i = 0; $i < $length; $i++) {
             $byte = $iterator->current();
             if ($byte !== $string[$i]) {

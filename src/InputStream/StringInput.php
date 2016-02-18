@@ -15,6 +15,7 @@ class StringInput implements \IteratorAggregate
     {
         $string = $this->string;
         $length = strlen($string);
+        /** @noinspection ForeachInvariantsInspection */
         for ($i = 0; $i < $length; $i++) {
             yield $string[$i];
         }
