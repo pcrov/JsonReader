@@ -295,7 +295,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
                     throw new ParseException(sprintf(
                             "Line %d: Expected UTF-16 low surrogate, got \\u%x.",
-                            $this->line, $lowSurrogate)
+                            $this->getLineNumber(), $lowSurrogate)
                     );
                 }
 
@@ -305,7 +305,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
             case \IntlChar::BLOCK_CODE_LOW_SURROGATES:
                 throw new ParseException(sprintf(
                         "Line %d: Unexpected UTF-16 low surrogate \\u%x.",
-                        $this->line, $codepoint)
+                        $this->getLineNumber(), $codepoint)
                 );
                 break;
         }
@@ -318,7 +318,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
         if ($byte === null) {
             return sprintf(
                 "Line %d: Unexpected end of file.",
-                $this->line
+                $this->getLineNumber()
             );
         }
 
@@ -328,20 +328,20 @@ class Lexer implements \IteratorAggregate, Tokenizer
         if ($ord === null) {
             return sprintf(
                 "Line %d: Malformed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
-                $this->line, ...array_map("ord", str_split($codepoint))
+                $this->getLineNumber(), ...array_map("ord", str_split($codepoint))
             );
         }
 
         if (\IntlChar::isprint($codepoint)) {
             return sprintf(
                 "Line %d: Unexpected '%s'.",
-                $this->line, $codepoint
+                $this->getLineNumber(), $codepoint
             );
         }
 
         return sprintf(
             "Line %d: Unexpected control character \\u{%x}.",
-            $this->line, $ord
+            $this->getLineNumber(), $ord
         );
     }
 
