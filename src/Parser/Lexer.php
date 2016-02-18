@@ -17,7 +17,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
     private $bytestream;
 
     /**
-     * @var \Iterator Iterator provided by the $bytestream, which might be the bytestream itself.
+     * @var \IteratorIterator Iterator of the $bytestream
      */
     private $byteIterator;
 
@@ -347,10 +347,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
 
     private function initByteIterator()
     {
-        $bytestream = $this->bytestream;
-
-        /** @var \Iterator $iterator */
-        $iterator = ($bytestream instanceof \IteratorAggregate) ? $bytestream->getIterator() : $bytestream;
+        $iterator = new \IteratorIterator($this->bytestream);
         $iterator->rewind();
         $this->byteIterator = $iterator;
     }

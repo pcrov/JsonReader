@@ -2,7 +2,7 @@
 
 namespace pcrov\JsonReader\Parser;
 
-interface Tokenizer
+interface Tokenizer extends \Traversable
 {
     const T_STRING = 1;
     const T_NUMBER = 2;

@@ -27,7 +27,7 @@ class Parser implements \IteratorAggregate, NodeTypes
     private $tokenizer;
 
     /**
-     * @var \Iterator Iterator provided by the $tokenizer, which might be the tokenizer itself.
+     * @var \IteratorIterator Iterator of $tokenizer.
      */
     private $tokenIterator;
 
@@ -100,10 +100,7 @@ class Parser implements \IteratorAggregate, NodeTypes
 
     private function initTokenizer()
     {
-        $tokenizer = $this->tokenizer;
-
-        /** @var \Iterator $iterator */
-        $iterator = ($tokenizer instanceof \IteratorAggregate) ? $tokenizer->getIterator() : $tokenizer;
+        $iterator = new \IteratorIterator($this->tokenizer);
         $iterator->rewind();
         $this->tokenIterator = $iterator;
     }
