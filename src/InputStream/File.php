@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader\InputStream;
+namespace pcrov\JsonReader\InputStream;
 
 class File implements \IteratorAggregate
 {

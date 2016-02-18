@@ -25,12 +25,12 @@
     },
     "autoload": {
         "psr-4": {
-            "JsonReader\\": "src/"
+            "pcrov\\JsonReader\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "JsonReader\\": "test/"
+            "pcrov\\JsonReader\\": "test/"
         }
     }
 }

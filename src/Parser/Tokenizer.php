@@ -1,6 +1,6 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader\Parser;
+namespace pcrov\JsonReader\Parser;
 
 interface Tokenizer
 {

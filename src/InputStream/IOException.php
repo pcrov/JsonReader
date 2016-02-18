@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader\InputStream;
+namespace pcrov\JsonReader\InputStream;
 
-use JsonReader\Exception;
+use pcrov\JsonReader\Exception;
 
 class IOException extends Exception
 {

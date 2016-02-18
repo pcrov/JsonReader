@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader\Parser;
+namespace pcrov\JsonReader\Parser;
 
-use JsonReader\Exception;
+use pcrov\JsonReader\Exception;
 
 class ParseException extends Exception
 {

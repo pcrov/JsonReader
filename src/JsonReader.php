@@ -1,11 +1,11 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader;
+namespace pcrov\JsonReader;
 
-use JsonReader\InputStream\File;
-use JsonReader\InputStream\StringInput;
-use JsonReader\Parser\Parser;
-use JsonReader\Parser\Lexer;
+use pcrov\JsonReader\InputStream\File;
+use pcrov\JsonReader\InputStream\StringInput;
+use pcrov\JsonReader\Parser\Parser;
+use pcrov\JsonReader\Parser\Lexer;
 
 /**
  * Class JsonReader

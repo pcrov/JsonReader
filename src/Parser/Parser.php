@@ -1,8 +1,8 @@
 <?php declare(strict_types = 1);
 
-namespace JsonReader\Parser;
+namespace pcrov\JsonReader\Parser;
 
-use JsonReader\NodeTypes;
+use pcrov\JsonReader\NodeTypes;
 
 class Parser implements \IteratorAggregate, NodeTypes
 {
