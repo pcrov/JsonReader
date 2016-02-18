@@ -4,6 +4,7 @@ namespace pcrov\JsonReader;
 
 interface NodeTypes
 {
+    const NONE = 0;
     const STRING = 1;
     const NUMBER = 2;
     const BOOL = 3;
