@@ -27,7 +27,7 @@ class Parser implements \IteratorAggregate, NodeTypes
     private $tokenizer;
 
     /**
-     * @var \Iterator Iterator provided by the $lexer, which might be the lexer itself.
+     * @var \Iterator Iterator provided by the $tokenizer, which might be the tokenizer itself.
      */
     private $tokenIterator;
 
@@ -119,21 +119,22 @@ class Parser implements \IteratorAggregate, NodeTypes
         $this->name = null;
         $this->depth++;
         $iterator->next();
+        $token = $iterator->key();
 
-        if ($iterator->key() !== Tokenizer::T_END_ARRAY) {
+        if ($token !== Tokenizer::T_END_ARRAY) {
             do {
                 yield from $this->parseValue();
             } while ($this->consumeComma());
+            $token = $iterator->key();
         }
 
-        $token = $iterator->key();
-        if ($token === Tokenizer::T_END_ARRAY) {
-            $this->depth--;
-            yield [self::END_ARRAY, $name, null, $this->depth];
-            $iterator->next();
-        } else {
+        if ($token !== Tokenizer::T_END_ARRAY) {
             throw new ParseException($this->getExceptionMessage($token));
         }
+
+        $this->depth--;
+        yield [self::END_ARRAY, $name, null, $this->depth];
+        $iterator->next();
     }
 
     private function parseObject() : \Generator
@@ -146,22 +147,23 @@ class Parser implements \IteratorAggregate, NodeTypes
 
         $this->depth++;
         $iterator->next();
+        $token = $iterator->key();
 
         // name:value property pairs
-        if ($iterator->key() === Tokenizer::T_STRING) {
+        if ($token === Tokenizer::T_STRING) {
             do {
                 yield from $this->parsePair();
             } while ($this->consumeComma());
+            $token = $iterator->key();
         }
 
-        $token = $iterator->key();
-        if ($token === Tokenizer::T_END_OBJECT) {
-            $this->depth--;
-            yield [self::END_OBJECT, $name, null, $this->depth];
-            $iterator->next();
-        } else {
+        if ($token !== Tokenizer::T_END_OBJECT) {
             throw new ParseException($this->getExceptionMessage($token));
         }
+
+        $this->depth--;
+        yield [self::END_OBJECT, $name, null, $this->depth];
+        $iterator->next();
     }
 
     private function parsePair() : \Generator
