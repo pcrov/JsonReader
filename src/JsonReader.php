@@ -119,10 +119,29 @@ class JsonReader implements NodeTypes
      */
     public function next(string $name = null) : bool
     {
-        if ($this->parser === null) {
+        $parser = $this->parser;
+
+        if ($parser === null) {
             throw new Exception("Load data before trying to read.");
         }
 
+        $depth = $this->getDepth();
+        while (true) {
+            $this->read();
+            if ($this->getDepth() <= $depth) {
+                break;
+            }
+        }
+
+        if ($name !== null) {
+            do {
+                if ($this->name === $name) {
+                    break;
+                }
+            } while ($this->next());
+        }
+
+        return $parser->valid();
     }
 
     /**
