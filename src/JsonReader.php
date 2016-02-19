@@ -2,7 +2,6 @@
 
 namespace pcrov\JsonReader;
 
-use pcrov\IteratorStackIterator;
 use pcrov\JsonReader\InputStream\File;
 use pcrov\JsonReader\InputStream\StringInput;
 use pcrov\JsonReader\Parser\Parser;
@@ -40,9 +39,9 @@ class JsonReader implements NodeTypes
     private $depth = 0;
 
     /**
-     * @return bool
+     * @return void
      */
-    public function close() : bool
+    public function close()
     {
         $this->parser = null;
         $this->nodeType = self::NONE;
@@ -80,15 +79,14 @@ class JsonReader implements NodeTypes
      */
     public function getValue()
     {
-        $type = $this->getNodeType();
-        $value = $this->value;
-
-        if ($value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
-            $value = $this->buildTree();
-            $this->value = $value;
+        $nodeType = $this->getNodeType();
+        switch ($nodeType) {
+            case self::ARRAY:
+            case self::OBJECT:
+                return $this->value ?? $this->buildTree($nodeType);
+            default:
+                return $this->value;
         }
-
-        return $value;
     }
 
     /**
@@ -98,9 +96,11 @@ class JsonReader implements NodeTypes
     public function init(\Traversable $parser)
     {
         $this->close();
-        $parser = new \IteratorIterator($parser);
-        $parser->rewind();
-        $this->parser = $parser;
+        $iterator = new \AppendIterator();
+        $iterator->append(new \ArrayIterator([[self::NONE, null, null, 0]])); //faux document start node
+        $iterator->append(new \IteratorIterator($parser));
+        $iterator->rewind();
+        $this->parser = $iterator;
     }
 
     /**
@@ -146,29 +146,59 @@ class JsonReader implements NodeTypes
             throw new Exception("Load data before trying to read.");
         }
 
-        $parser->next();
+        do {
+            $parser->next();
+
+            //@formatter:off silly ide
+            list (
+                $this->nodeType,
+                $this->name,
+                $this->value,
+                $this->depth
+            ) = $parser->current();
+            //@formatter:on
+
+        } while (
+            $parser->valid() &&
+            ($this->nodeType === self::END_ARRAY || $this->nodeType === self::END_OBJECT)
+        );
+
         if (!$parser->valid()) {
+            $this->close();
             return false;
         }
-
-        //@formatter:off silly ide
-        list (
-            $this->nodeType,
-            $this->name,
-            $this->value,
-            $this->depth
-        ) = $parser->current();
-        //@formatter:on
 
         return true;
     }
 
-    /**
-     * @return array
-     */
-    private function buildTree() : array
+    private function buildTree(int $type) : array
     {
-        //todo: actually build the tree
-        return [];
+        assert($type === self::ARRAY || $type === self::OBJECT);
+        $parser = $this->parser;
+        $end = ($type === self::ARRAY) ? self::END_ARRAY : self::END_OBJECT;
+        $return = [];
+
+        $parser->next();
+        while (true) {
+            list ($type, $name, $value) = $parser->current();
+
+            if ($type === $end) {
+                break;
+            }
+
+            if ($type === self::ARRAY || $type === self::OBJECT) {
+                $value = $this->buildTree($type);
+            }
+
+            if ($name !== null) {
+                $return[$name] = $value;
+            } else {
+                $return[] = $value;
+            }
+
+            $parser->next();
+        }
+
+        return $return;
     }
 }

@@ -13,4 +13,16 @@ interface NodeTypes
     const END_ARRAY = 6;
     const OBJECT = 7;
     const END_OBJECT = 8;
+
+    const NAMES = [
+        self::NONE => "NONE",
+        self::STRING => "STRING",
+        self::NUMBER => "NUMBER",
+        self::BOOL => "BOOL",
+        self::NULL => "NULL",
+        self::ARRAY => "ARRAY",
+        self::END_ARRAY => "END_ARRAY",
+        self::OBJECT => "OBJECT",
+        self::END_OBJECT => "END_OBJECT"
+    ];
 }
