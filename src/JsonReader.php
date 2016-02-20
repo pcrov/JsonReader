@@ -20,6 +20,11 @@ class JsonReader implements NodeTypes
     private $parser;
 
     /**
+     * @var array[] Tuples from the parser, cached during tree building
+     */
+    private $parseCache = [];
+
+    /**
      * @var int
      */
     private $nodeType = self::NONE;
@@ -40,21 +45,12 @@ class JsonReader implements NodeTypes
     private $depth = 0;
 
     /**
-     * @var array[] Tuples from the parser, cached during tree building
-     */
-    private $parseCache = [];
-
-    /**
      * @return void
      */
     public function close()
     {
+        $this->clear();
         $this->parser = null;
-        $this->nodeType = self::NONE;
-        $this->name = null;
-        $this->value = null;
-        $this->depth = 0;
-        $this->parseCache = [];
     }
 
     /**
@@ -133,8 +129,7 @@ class JsonReader implements NodeTypes
         }
 
         $depth = $this->getDepth();
-        while (true) {
-            $this->read();
+        while ($result = $this->read()) {
             if ($this->getDepth() <= $depth) {
                 break;
             }
@@ -145,10 +140,10 @@ class JsonReader implements NodeTypes
                 if ($this->name === $name) {
                     break;
                 }
-            } while ($this->next());
+            } while ($result = $this->next());
         }
 
-        return $parser->valid();
+        return $result;
     }
 
     /**
@@ -173,7 +168,7 @@ class JsonReader implements NodeTypes
         }
 
         if (!$parser->valid()) {
-            $this->close();
+            $this->clear();
             return false;
         }
 
@@ -225,5 +220,13 @@ class JsonReader implements NodeTypes
         }
 
         return $result;
+    }
+
+    private function clear()
+    {
+        $this->nodeType = self::NONE;
+        $this->name = null;
+        $this->value = null;
+        $this->depth = 0;
     }
 }
