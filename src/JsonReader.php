@@ -2,6 +2,7 @@
 
 namespace pcrov\JsonReader;
 
+use pcrov\IteratorStackIterator;
 use pcrov\JsonReader\InputStream\File;
 use pcrov\JsonReader\InputStream\StringInput;
 use pcrov\JsonReader\Parser\Parser;
@@ -14,7 +15,7 @@ use pcrov\JsonReader\Parser\Lexer;
 class JsonReader implements NodeTypes
 {
     /**
-     * @var \IteratorIterator|null
+     * @var IteratorStackIterator|null
      */
     private $parser;
 
@@ -39,6 +40,11 @@ class JsonReader implements NodeTypes
     private $depth = 0;
 
     /**
+     * @var array[] Tuples from the parser, cached during tree building
+     */
+    private $parseCache = [];
+
+    /**
      * @return void
      */
     public function close()
@@ -48,6 +54,7 @@ class JsonReader implements NodeTypes
         $this->name = null;
         $this->value = null;
         $this->depth = 0;
+        $this->parseCache = [];
     }
 
     /**
@@ -80,13 +87,14 @@ class JsonReader implements NodeTypes
     public function getValue()
     {
         $nodeType = $this->getNodeType();
-        switch ($nodeType) {
-            case self::ARRAY:
-            case self::OBJECT:
-                return $this->value ?? $this->buildTree($nodeType);
-            default:
-                return $this->value;
+
+        if ($this->value === null && ($nodeType === self::ARRAY || $nodeType === self::OBJECT)) {
+            $this->value = $this->buildTree($nodeType);
+            $this->parser->push(new \ArrayIterator($this->parseCache));
+            $this->parseCache = [];
         }
+
+        return $this->value;
     }
 
     /**
@@ -96,9 +104,8 @@ class JsonReader implements NodeTypes
     public function init(\Traversable $parser)
     {
         $this->close();
-        $iterator = new \AppendIterator();
-        $iterator->append(new \ArrayIterator([[self::NONE, null, null, 0]])); //faux document start node
-        $iterator->append(new \IteratorIterator($parser));
+        $iterator = new IteratorStackIterator();
+        $iterator->push(new \IteratorIterator($parser));
         $iterator->rewind();
         $this->parser = $iterator;
     }
@@ -165,27 +172,26 @@ class JsonReader implements NodeTypes
             throw new Exception("Load data before trying to read.");
         }
 
-        do {
-            $parser->next();
-
-            //@formatter:off silly ide
-            list (
-                $this->nodeType,
-                $this->name,
-                $this->value,
-                $this->depth
-            ) = $parser->current();
-            //@formatter:on
-
-        } while (
-            $parser->valid() &&
-            ($this->nodeType === self::END_ARRAY || $this->nodeType === self::END_OBJECT)
-        );
-
         if (!$parser->valid()) {
             $this->close();
             return false;
         }
+
+        //@formatter:off silly ide
+        list (
+            $this->nodeType,
+            $this->name,
+            $this->value,
+            $this->depth
+        ) = $parser->current();
+        //@formatter:on
+
+        if ($this->nodeType === self::END_ARRAY || $this->nodeType === self::END_OBJECT) {
+            $parser->next();
+            return $this->read();
+        }
+
+        $parser->next();
 
         return true;
     }
@@ -195,11 +201,13 @@ class JsonReader implements NodeTypes
         assert($type === self::ARRAY || $type === self::OBJECT);
         $parser = $this->parser;
         $end = ($type === self::ARRAY) ? self::END_ARRAY : self::END_OBJECT;
-        $return = [];
+        $result = [];
 
-        $parser->next();
         while (true) {
-            list ($type, $name, $value) = $parser->current();
+            $current = $parser->current();
+            $this->parseCache[] = $current;
+            list ($type, $name, $value) = $current;
+            $parser->next();
 
             if ($type === $end) {
                 break;
@@ -210,14 +218,12 @@ class JsonReader implements NodeTypes
             }
 
             if ($name !== null) {
-                $return[$name] = $value;
+                $result[$name] = $value;
             } else {
-                $return[] = $value;
+                $result[] = $value;
             }
-
-            $parser->next();
         }
 
-        return $return;
+        return $result;
     }
 }
