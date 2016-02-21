@@ -24,8 +24,8 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    /** @dataProvider provideTestTokens */
-    public function testTokens($input, $expectedToken, $expectedValue)
+    /** @dataProvider provideTestTokenization */
+    public function testTokenization($input, $expectedToken, $expectedValue)
     {
         $bytestream = $this->bytestream;
         $bytestream->setString($input);
@@ -51,7 +51,7 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         foreach ($lexer as $value);
     }
 
-    public function provideTestTokens()
+    public function provideTestTokenization()
     {
         return [
             [
