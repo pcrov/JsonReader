@@ -60,7 +60,9 @@ class Lexer implements \IteratorAggregate, Tokenizer
                     break;
                 case "\r":
                     $this->line++;
-                    $this->skipOptionalLinefeed();
+                    if ($iterator->current() === "\n") {
+                        $iterator->next();
+                    }
                     break;
                 case ":":
                     yield self::T_COLON => null;
@@ -108,18 +110,6 @@ class Lexer implements \IteratorAggregate, Tokenizer
     public function getLineNumber() : int
     {
         return $this->line;
-    }
-
-    /**
-     * Skips the current byte if it's \n without incrementing the line count.
-     * Used to treat \r\n as one newline.
-     */
-    private function skipOptionalLinefeed()
-    {
-        $iterator = $this->byteIterator;
-        if ($iterator->current() === "\n") {
-            $iterator->next();
-        }
     }
 
     /**
