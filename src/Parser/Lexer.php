@@ -29,7 +29,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
 
     /**
      * Lexer constructor.
-     * @param \Traversable $bytestream Byte stream to lex. Each iteration should provide a single byte.
+     * @param \Traversable $bytestream Bytestream to lex. Each iteration should provide a single byte.
      */
     public function __construct(\Traversable $bytestream)
     {
@@ -50,52 +50,46 @@ class Lexer implements \IteratorAggregate, Tokenizer
 
         while ($iterator->valid()) {
             $byte = $iterator->current();
+            $iterator->next();
             switch ($byte) {
                 case " ":
                 case "\t":
-                    $iterator->next();
                     break;
                 case "\n":
                     $this->line++;
-                    $iterator->next();
                     break;
                 case "\r":
-                    $this->consumeCarriageReturn();
+                    $this->line++;
+                    $this->skipOptionalLinefeed();
                     break;
                 case ":":
                     yield self::T_COLON => null;
-                    $iterator->next();
                     break;
                 case ",":
                     yield self::T_COMMA => null;
-                    $iterator->next();
                     break;
                 case "[":
                     yield self::T_BEGIN_ARRAY => null;
-                    $iterator->next();
                     break;
                 case "]":
                     yield self::T_END_ARRAY => null;
-                    $iterator->next();
                     break;
                 case "{":
                     yield self::T_BEGIN_OBJECT => null;
-                    $iterator->next();
                     break;
                 case "}":
                     yield self::T_END_OBJECT => null;
-                    $iterator->next();
                     break;
                 case "t":
-                    $this->consumeLiteral("true");
+                    $this->consumeLiteral("rue");
                     yield self::T_TRUE => true;
                     break;
                 case "f":
-                    $this->consumeLiteral("false");
+                    $this->consumeLiteral("alse");
                     yield self::T_FALSE => false;
                     break;
                 case "n":
-                    $this->consumeLiteral("null");
+                    $this->consumeLiteral("ull");
                     yield self::T_NULL => null;
                     break;
                 case '"':
@@ -103,7 +97,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
                     break;
                 default:
                     if ($byte === "-" || ctype_digit($byte)) {
-                        yield self::T_NUMBER => $this->evaluateNumber();
+                        yield self::T_NUMBER => $this->evaluateNumber($byte);
                     } else {
                         throw new ParseException($this->getExceptionMessage($byte));
                     }
@@ -117,16 +111,12 @@ class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Consumes the current \r as well as a single immediately
-     * following \n in order to treat \r\n as one newline.
+     * Skips the current byte if it's \n without incrementing the line count.
+     * Used to treat \r\n as one newline.
      */
-    private function consumeCarriageReturn()
+    private function skipOptionalLinefeed()
     {
         $iterator = $this->byteIterator;
-        assert($iterator->current() === "\r");
-
-        $this->line++;
-        $iterator->next();
         if ($iterator->current() === "\n") {
             $iterator->next();
         }
@@ -146,43 +136,35 @@ class Lexer implements \IteratorAggregate, Tokenizer
         /** @noinspection ForeachInvariantsInspection */
         for ($i = 0; $i < $length; $i++) {
             $byte = $iterator->current();
+            $iterator->next();
             if ($byte !== $string[$i]) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
-            $iterator->next();
         }
     }
 
     private function evaluateEscapeSequence() : string
     {
         $iterator = $this->byteIterator;
-        assert($iterator->current() === "\\");
-        $iterator->next();
         $byte = $iterator->current();
+        $iterator->next();
 
         switch ($byte) {
             case '"':
             case "\\":
             case "/":
-                $iterator->next();
                 return $byte;
             case "b":
-                $iterator->next();
                 return "\x8";
             case "f":
-                $iterator->next();
                 return "\f";
             case "n":
-                $iterator->next();
                 return "\n";
             case "r":
-                $iterator->next();
                 return "\r";
             case "t":
-                $iterator->next();
                 return "\t";
             case "u":
-                $iterator->next();
                 return $this->evaluateUnicodeSequence();
             default:
                 throw new ParseException($this->getExceptionMessage($byte));
@@ -194,14 +176,12 @@ class Lexer implements \IteratorAggregate, Tokenizer
     {
         $iterator = $this->byteIterator;
         $buffer = "";
-        assert($iterator->current() === '"');
-        $iterator->next(); //Skip initial "
 
         while ($iterator->valid()) {
             $byte = $iterator->current();
+            $iterator->next();
 
             if ($byte === '"') {
-                $iterator->next();
                 return $buffer;
             }
 
@@ -213,7 +193,6 @@ class Lexer implements \IteratorAggregate, Tokenizer
                 $buffer .= $this->evaluateEscapeSequence();
             } else {
                 $buffer .= $byte;
-                $iterator->next();
             }
         }
 
@@ -229,41 +208,45 @@ class Lexer implements \IteratorAggregate, Tokenizer
      *
      * Doing it byte by byte is less fun, but here we are.
      *
-     * @return int|float
+     * @param string $byte Initial byte. The bytestream cursor starts one position ahead of this.
+     * @return float|int
      * @throws ParseException
      */
-    private function evaluateNumber()
+    private function evaluateNumber(string $byte)
     {
         $iterator = $this->byteIterator;
-        $byte = $iterator->current();
         assert($byte === "-" || ctype_digit($byte));
         $buffer = "";
 
         if ($byte === "-") {
             $buffer .= $byte;
-            $iterator->next();
             $byte = $iterator->current();
+            $iterator->next();
         }
 
         if ($byte === "0") {
             $buffer .= $byte;
-            $iterator->next();
-            $byte = $iterator->current();
         } elseif (ctype_digit($byte)) {
-            $buffer .= $this->scanDigits();
-            $byte = $iterator->current();
+            $buffer .= $byte . $this->scanDigits();
         } else {
             throw new ParseException($this->getExceptionMessage($byte));
         }
+
+        /**
+         * Catch up to the cursor. From here on we have to take care not to overshoot,
+         * else we risk losing the byte immediately following the number.
+         */
+        $byte = $iterator->current();
 
         if ($byte === ".") {
             $buffer .= $byte;
             $iterator->next();
             $byte = $iterator->current();
+            $iterator->next();
             if (!ctype_digit($byte)) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
-            $buffer .= $this->scanDigits();
+            $buffer .= $byte . $this->scanDigits();
             $byte = $iterator->current();
         }
 
@@ -279,6 +262,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
             }
 
             if (!ctype_digit($byte)) {
+                $iterator->next();
                 throw new ParseException($this->getExceptionMessage($byte));
             }
             $buffer .= $this->scanDigits();
@@ -321,6 +305,53 @@ class Lexer implements \IteratorAggregate, Tokenizer
         return \IntlChar::chr($codepoint);
     }
 
+    /**
+     * Scans a single UTF-8 codepoint, which can be up to four bytes long.
+     *
+     * A partial codepoint or invalid UTF-8 byte will be returned as-is.
+     *
+     *  0xxx xxxx   Single-byte codepoint.
+     *  110x xxxx   First of a two-byte codepoint.
+     *  1110 xxxx   First of three.
+     *  1111 0xxx   First of four.
+     *  10xx xxxx   A continuation of any of the three preceding.
+     *
+     * @see https://en.wikipedia.org/wiki/UTF-8#Description
+     *
+     * @param string $byte Initial byte. The bytestream cursor starts one position ahead of this.
+     * @return string The scanned full or partial codepoint, or invalid UTF-8 byte.
+     */
+    private function fillCodepoint(string $byte) : string
+    {
+        $iterator = $this->byteIterator;
+        $codepoint = $byte;
+        $ord = ord($codepoint);
+
+        if (!(($ord >> 5) ^ 0b110)) {
+            $expect = 1;
+        } elseif (!(($ord >> 4) ^ 0b1110)) {
+            $expect = 2;
+        } elseif (!(($ord >> 3) ^ 0b11110)) {
+            $expect = 3;
+        } else {
+            return $codepoint;
+        }
+
+        while ($iterator->valid() && $expect > 0) {
+            $byte = $iterator->current();
+
+            if ((ord($byte) >> 6) ^ 0b10) {
+                break;
+            }
+
+            $codepoint .= $byte;
+            $iterator->next();
+            $expect--;
+        }
+
+        return $codepoint;
+    }
+
     private function getExceptionMessage(string $byte = null) : string
     {
         if ($byte === null) {
@@ -330,7 +361,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
             );
         }
 
-        $codepoint = $this->scanCodepoint();
+        $codepoint = $this->fillCodepoint($byte);
         $ord = \IntlChar::ord($codepoint);
 
         if ($ord === null) {
@@ -358,54 +389,6 @@ class Lexer implements \IteratorAggregate, Tokenizer
         $iterator = new \IteratorIterator($this->bytestream);
         $iterator->rewind();
         $this->byteIterator = $iterator;
-    }
-
-    /**
-     * Scans a single UTF-8 codepoint, which can be up to four bytes long.
-     *
-     * The cursor should be at the beginning of a valid UTF-8 sequence.
-     * A partial codepoint or invalid UTF-8 byte will be returned as-is.
-     *
-     *  0xxx xxxx   Single-byte codepoint.
-     *  110x xxxx   First of a two-byte codepoint.
-     *  1110 xxxx   First of three.
-     *  1111 0xxx   First of four.
-     *  10xx xxxx   A continuation of any of the three preceding.
-     *
-     * @see https://en.wikipedia.org/wiki/UTF-8#Description
-     *
-     * @return string The scanned full or partial codepoint, or invalid UTF-8 byte.
-     */
-    private function scanCodepoint() : string
-    {
-        $iterator = $this->byteIterator;
-        $codepoint = $iterator->current();
-        $iterator->next();
-        $ord = ord($codepoint);
-
-        if (!(($ord >> 5) ^ 0b110)) {
-            $expect = 1;
-        } elseif (!(($ord >> 4) ^ 0b1110)) {
-            $expect = 2;
-        } elseif (!(($ord >> 3) ^ 0b11110)) {
-            $expect = 3;
-        } else {
-            return $codepoint;
-        }
-
-        while ($iterator->valid() && $expect > 0) {
-            $byte = $iterator->current();
-
-            if ((ord($byte) >> 6) ^ 0b10) {
-                break;
-            }
-
-            $codepoint .= $byte;
-            $iterator->next();
-            $expect--;
-        }
-
-        return $codepoint;
     }
 
     private function scanDigits() : string
@@ -436,12 +419,11 @@ class Lexer implements \IteratorAggregate, Tokenizer
 
         for ($i = 0; $i < 4; $i++) {
             $byte = $iterator->current();
+            $iterator->next();
             if (!ctype_xdigit($byte)) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
             $sequence .= $byte;
-
-            $iterator->next();
         }
 
         return $sequence;

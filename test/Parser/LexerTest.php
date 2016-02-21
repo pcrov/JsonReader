@@ -115,8 +115,8 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 Tokenizer::T_NUMBER, -0.8
             ],
             [
-                '42.8e5',
-                Tokenizer::T_NUMBER, 42.8e5
+                '42e5',
+                Tokenizer::T_NUMBER, 42e5
             ],
             [
                 '42.8e-5',
@@ -203,6 +203,10 @@ class LexerTest extends \PHPUnit_Framework_TestCase
             [
                 '"\u454Z"',
                 "Line 1: Unexpected 'Z'."
+            ],
+            [
+                '"\u454' . "\u{1F418}\"",
+                "Line 1: Unexpected '\u{1F418}'."
             ],
             [
                 "\"\x1e\"",
