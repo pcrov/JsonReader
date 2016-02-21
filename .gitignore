@@ -3,3 +3,4 @@ vendor/
 doc/
 composer.lock
 scratchpad.php
+phpdoc.dist.xml
