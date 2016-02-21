@@ -160,23 +160,29 @@ class Lexer implements \IteratorAggregate, Tokenizer
         $iterator->next();
         $byte = $iterator->current();
 
-        $iterator->next();
         switch ($byte) {
             case '"':
             case "\\":
             case "/":
+                $iterator->next();
                 return $byte;
             case "b":
+                $iterator->next();
                 return "\x8";
             case "f":
+                $iterator->next();
                 return "\f";
             case "n":
+                $iterator->next();
                 return "\n";
             case "r":
+                $iterator->next();
                 return "\r";
             case "t":
+                $iterator->next();
                 return "\t";
             case "u":
+                $iterator->next();
                 return $this->evaluateUnicodeSequence();
             default:
                 throw new ParseException($this->getExceptionMessage($byte));
@@ -199,7 +205,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
                 return $buffer;
             }
 
-            if ($byte < "\x1f") {
+            if ($byte <= "\x1f") {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
 
@@ -297,7 +303,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
 
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
                     throw new ParseException(sprintf(
-                            "Line %d: Expected UTF-16 low surrogate, got \\u%x.",
+                            "Line %d: Expected UTF-16 low surrogate, got \\u%X.",
                             $this->getLineNumber(), $lowSurrogate)
                     );
                 }
@@ -307,10 +313,9 @@ class Lexer implements \IteratorAggregate, Tokenizer
 
             case \IntlChar::BLOCK_CODE_LOW_SURROGATES:
                 throw new ParseException(sprintf(
-                        "Line %d: Unexpected UTF-16 low surrogate \\u%x.",
+                        "Line %d: Unexpected UTF-16 low surrogate \\u%X.",
                         $this->getLineNumber(), $codepoint)
                 );
-                break;
         }
 
         return \IntlChar::chr($codepoint);
@@ -343,7 +348,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
         }
 
         return sprintf(
-            "Line %d: Unexpected control character \\u{%x}.",
+            "Line %d: Unexpected control character \\u{%X}.",
             $this->getLineNumber(), $ord
         );
     }
