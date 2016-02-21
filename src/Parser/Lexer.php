@@ -87,15 +87,15 @@ class Lexer implements \IteratorAggregate, Tokenizer
                     $iterator->next();
                     break;
                 case "t":
-                    $this->consumeString("true");
+                    $this->consumeLiteral("true");
                     yield self::T_TRUE => true;
                     break;
                 case "f":
-                    $this->consumeString("false");
+                    $this->consumeLiteral("false");
                     yield self::T_FALSE => false;
                     break;
                 case "n":
-                    $this->consumeString("null");
+                    $this->consumeLiteral("null");
                     yield self::T_NULL => null;
                     break;
                 case '"':
@@ -138,7 +138,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
      * @param string $string
      * @throws ParseException
      */
-    private function consumeString(string $string)
+    private function consumeLiteral(string $string)
     {
         $iterator = $this->byteIterator;
         $length = strlen($string);
@@ -298,7 +298,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
         switch (\IntlChar::getBlockCode($codepoint)) {
             case \IntlChar::BLOCK_CODE_HIGH_PRIVATE_USE_SURROGATES:
             case \IntlChar::BLOCK_CODE_HIGH_SURROGATES:
-                $this->consumeString("\\u");
+                $this->consumeLiteral("\\u");
                 $lowSurrogate = hexdec($this->scanUnicodeSequence());
 
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
