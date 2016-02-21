@@ -160,6 +160,7 @@ class Lexer implements \IteratorAggregate, Tokenizer
         $iterator->next();
         $byte = $iterator->current();
 
+        $iterator->next();
         switch ($byte) {
             case '"':
             case "\\":
@@ -176,7 +177,6 @@ class Lexer implements \IteratorAggregate, Tokenizer
             case "t":
                 return "\t";
             case "u":
-                $iterator->next();
                 return $this->evaluateUnicodeSequence();
             default:
                 throw new ParseException($this->getExceptionMessage($byte));
@@ -203,9 +203,12 @@ class Lexer implements \IteratorAggregate, Tokenizer
                 throw new ParseException($this->getExceptionMessage($byte));
             }
 
-            $buffer .= ($byte === "\\") ? $this->evaluateEscapeSequence() : $byte;
-
-            $iterator->next();
+            if ($byte === "\\") {
+                $buffer .= $this->evaluateEscapeSequence();
+            } else {
+                $buffer .= $byte;
+                $iterator->next();
+            }
         }
 
         // Unexpected end of file.
