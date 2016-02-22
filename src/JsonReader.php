@@ -57,7 +57,7 @@ class JsonReader
      */
     public function close()
     {
-        $this->clear();
+        $this->resetNode();
         $this->parser = null;
     }
 
@@ -176,7 +176,7 @@ class JsonReader
         }
 
         if (!$parser->valid()) {
-            $this->clear();
+            $this->resetNode();
             return false;
         }
 
@@ -230,7 +230,7 @@ class JsonReader
         return $result;
     }
 
-    private function clear()
+    private function resetNode()
     {
         $this->nodeType = NodeType::NONE;
         $this->name = null;
