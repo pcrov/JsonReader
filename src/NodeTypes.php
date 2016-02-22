@@ -3,10 +3,11 @@
 namespace pcrov\JsonReader;
 
 /**
- * {@internal These would live in the parser (or a parser interface, rather) if not for
- * the desire to expose them as part of the simplified reader api.}
- *
  * Interface NodeTypes
+ *
+ * These would live in the parser (or a parser interface, rather) if not for
+ * the desire to expose them as part of the simplified reader api.
+ *
  * @package pcrov\JsonReader
  */
 interface NodeTypes

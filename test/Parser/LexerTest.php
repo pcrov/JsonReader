@@ -18,7 +18,7 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($iterator->valid());
 
         $line = 1;
-        foreach ($iterator as $value) {
+        foreach ($iterator as $_) {
             $this->assertSame($line, $lexer->getLineNumber());
             $line++;
         }
@@ -48,7 +48,7 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         $bytestream = $this->bytestream;
         $bytestream->setString($input);
         $lexer = new \IteratorIterator(new Lexer($bytestream));
-        foreach ($lexer as $value);
+        foreach ($lexer as $_);
     }
 
     public function provideTestTokenization()
