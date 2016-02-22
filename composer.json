@@ -19,7 +19,7 @@
     "require": {
         "php": "^7.0",
         "ext-intl": "*",
-        "pcrov/iteratorstackiterator": "0.0.0"
+        "pcrov/iteratorstackiterator": "^0"
     },
     "require-dev": {
         "phpunit/phpunit": "^5.2"
