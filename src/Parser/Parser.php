@@ -2,23 +2,23 @@
 
 namespace pcrov\JsonReader\Parser;
 
-use pcrov\JsonReader\NodeTypes;
+use pcrov\JsonReader\NodeType;
 
-class Parser implements \IteratorAggregate, NodeTypes
+class Parser implements \IteratorAggregate
 {
     /**
      * @var array Map of tokens to node types.
      */
     private $tokenTypeMap = [
-        Tokenizer::T_STRING => self::STRING,
-        Tokenizer::T_NUMBER => self::NUMBER,
-        Tokenizer::T_TRUE => self::BOOL,
-        Tokenizer::T_FALSE => self::BOOL,
-        Tokenizer::T_NULL => self::NULL,
-        Tokenizer::T_BEGIN_ARRAY => self::ARRAY,
-        Tokenizer::T_END_ARRAY => self::END_ARRAY,
-        Tokenizer::T_BEGIN_OBJECT => self::OBJECT,
-        Tokenizer::T_END_OBJECT => self::END_OBJECT
+        Tokenizer::T_STRING => NodeType::STRING,
+        Tokenizer::T_NUMBER => NodeType::NUMBER,
+        Tokenizer::T_TRUE => NodeType::BOOL,
+        Tokenizer::T_FALSE => NodeType::BOOL,
+        Tokenizer::T_NULL => NodeType::NULL,
+        Tokenizer::T_BEGIN_ARRAY => NodeType::ARRAY,
+        Tokenizer::T_END_ARRAY => NodeType::END_ARRAY,
+        Tokenizer::T_BEGIN_OBJECT => NodeType::OBJECT,
+        Tokenizer::T_END_OBJECT => NodeType::END_OBJECT
     ];
 
     /**
@@ -111,7 +111,7 @@ class Parser implements \IteratorAggregate, NodeTypes
         assert($iterator->key() === Tokenizer::T_BEGIN_ARRAY);
 
         $name = $this->name;
-        yield [self::ARRAY, $name, null, $this->depth];
+        yield [NodeType::ARRAY, $name, null, $this->depth];
 
         $this->name = null;
         $this->depth++;
@@ -130,7 +130,7 @@ class Parser implements \IteratorAggregate, NodeTypes
         }
 
         $this->depth--;
-        yield [self::END_ARRAY, $name, null, $this->depth];
+        yield [NodeType::END_ARRAY, $name, null, $this->depth];
         $iterator->next();
     }
 
@@ -140,7 +140,7 @@ class Parser implements \IteratorAggregate, NodeTypes
         assert($iterator->key() === Tokenizer::T_BEGIN_OBJECT);
 
         $name = $this->name;
-        yield [self::OBJECT, $name, null, $this->depth];
+        yield [NodeType::OBJECT, $name, null, $this->depth];
 
         $this->depth++;
         $iterator->next();
@@ -159,7 +159,7 @@ class Parser implements \IteratorAggregate, NodeTypes
         }
 
         $this->depth--;
-        yield [self::END_OBJECT, $name, null, $this->depth];
+        yield [NodeType::END_OBJECT, $name, null, $this->depth];
         $iterator->next();
     }
 

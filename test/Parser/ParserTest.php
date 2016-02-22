@@ -2,7 +2,7 @@
 
 namespace pcrov\JsonReader\Parser;
 
-use pcrov\JsonReader\NodeTypes;
+use pcrov\JsonReader\NodeType;
 
 class ParserTest extends \PHPUnit_Framework_TestCase
 {
@@ -52,7 +52,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_STRING, "foo"],
                 ],
                 [
-                    [NodeTypes::STRING, null, "foo", 0],
+                    [NodeType::STRING, null, "foo", 0],
                 ]
             ],
             [
@@ -60,7 +60,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_NUMBER, 42],
                 ],
                 [
-                    [NodeTypes::NUMBER, null, 42, 0],
+                    [NodeType::NUMBER, null, 42, 0],
                 ]
             ],
             [
@@ -68,7 +68,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_TRUE, true],
                 ],
                 [
-                    [NodeTypes::BOOL, null, true, 0],
+                    [NodeType::BOOL, null, true, 0],
                 ]
             ],
             [
@@ -76,7 +76,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_FALSE, false],
                 ],
                 [
-                    [NodeTypes::BOOL, null, false, 0],
+                    [NodeType::BOOL, null, false, 0],
                 ]
             ],
             [
@@ -84,7 +84,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_NULL, null],
                 ],
                 [
-                    [NodeTypes::NULL, null, null, 0],
+                    [NodeType::NULL, null, null, 0],
                 ]
             ],
             [
@@ -93,8 +93,8 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_ARRAY, null],
                 ],
                 [
-                    [NodeTypes::ARRAY, null, null, 0],
-                    [NodeTypes::END_ARRAY, null, null, 0],
+                    [NodeType::ARRAY, null, null, 0],
+                    [NodeType::END_ARRAY, null, null, 0],
                 ]
             ],
             [
@@ -109,12 +109,12 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_ARRAY, null],
                 ],
                 [
-                    [NodeTypes::ARRAY, null, null, 0],
-                    [NodeTypes::BOOL, null, false, 1],
-                    [NodeTypes::ARRAY, null, null, 1],
-                    [NodeTypes::END_ARRAY, null, null, 1],
-                    [NodeTypes::NUMBER, null, 42, 1],
-                    [NodeTypes::END_ARRAY, null, null, 0],
+                    [NodeType::ARRAY, null, null, 0],
+                    [NodeType::BOOL, null, false, 1],
+                    [NodeType::ARRAY, null, null, 1],
+                    [NodeType::END_ARRAY, null, null, 1],
+                    [NodeType::NUMBER, null, 42, 1],
+                    [NodeType::END_ARRAY, null, null, 0],
                 ]
             ],
             [
@@ -123,8 +123,8 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_OBJECT, null],
                 ],
                 [
-                    [NodeTypes::OBJECT, null, null, 0],
-                    [NodeTypes::END_OBJECT, null, null, 0],
+                    [NodeType::OBJECT, null, null, 0],
+                    [NodeType::END_OBJECT, null, null, 0],
                 ]
             ],
             [
@@ -145,12 +145,12 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_OBJECT, null],
                 ],
                 [
-                    [NodeTypes::OBJECT, null, null, 0],
-                    [NodeTypes::BOOL, "foo", false, 1],
-                    [NodeTypes::ARRAY, "bar", null, 1],
-                    [NodeTypes::END_ARRAY, "bar", null, 1],
-                    [NodeTypes::NUMBER, "answer", 42, 1],
-                    [NodeTypes::END_OBJECT, null, null, 0],
+                    [NodeType::OBJECT, null, null, 0],
+                    [NodeType::BOOL, "foo", false, 1],
+                    [NodeType::ARRAY, "bar", null, 1],
+                    [NodeType::END_ARRAY, "bar", null, 1],
+                    [NodeType::NUMBER, "answer", 42, 1],
+                    [NodeType::END_OBJECT, null, null, 0],
                 ]
             ],
         ];

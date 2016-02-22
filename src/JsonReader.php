@@ -12,8 +12,16 @@ use pcrov\JsonReader\Parser\Lexer;
  * Class JsonReader
  * @package JsonReader
  */
-class JsonReader implements NodeTypes
+class JsonReader
 {
+    const NONE = NodeType::NONE;
+    const STRING = NodeType::STRING;
+    const NUMBER = NodeType::NUMBER;
+    const BOOL = NodeType::BOOL;
+    const NULL = NodeType::NULL;
+    const ARRAY = NodeType::ARRAY;
+    const OBJECT = NodeType::OBJECT;
+
     /**
      * @var IteratorStackIterator|null
      */
@@ -27,7 +35,7 @@ class JsonReader implements NodeTypes
     /**
      * @var int
      */
-    private $nodeType = self::NONE;
+    private $nodeType = NodeType::NONE;
 
     /**
      * @var string|null
@@ -84,7 +92,7 @@ class JsonReader implements NodeTypes
     {
         $nodeType = $this->getNodeType();
 
-        if ($this->value === null && ($nodeType === self::ARRAY || $nodeType === self::OBJECT)) {
+        if ($this->value === null && ($nodeType === NodeType::ARRAY || $nodeType === NodeType::OBJECT)) {
             $this->value = $this->buildTree($nodeType);
             $this->parser->push(new \ArrayIterator($this->parseCache));
             $this->parseCache = [];
@@ -181,7 +189,7 @@ class JsonReader implements NodeTypes
         ) = $parser->current();
         //@formatter:on
 
-        if ($this->nodeType === self::END_ARRAY || $this->nodeType === self::END_OBJECT) {
+        if ($this->nodeType === NodeType::END_ARRAY || $this->nodeType === NodeType::END_OBJECT) {
             $parser->next();
             return $this->read();
         }
@@ -193,9 +201,9 @@ class JsonReader implements NodeTypes
 
     private function buildTree(int $type) : array
     {
-        assert($type === self::ARRAY || $type === self::OBJECT);
+        assert($type === NodeType::ARRAY || $type === NodeType::OBJECT);
         $parser = $this->parser;
-        $end = ($type === self::ARRAY) ? self::END_ARRAY : self::END_OBJECT;
+        $end = ($type === NodeType::ARRAY) ? NodeType::END_ARRAY : NodeType::END_OBJECT;
         $result = [];
 
         while (true) {
@@ -208,7 +216,7 @@ class JsonReader implements NodeTypes
                 break;
             }
 
-            if ($type === self::ARRAY || $type === self::OBJECT) {
+            if ($type === NodeType::ARRAY || $type === NodeType::OBJECT) {
                 $value = $this->buildTree($type);
             }
 
@@ -224,7 +232,7 @@ class JsonReader implements NodeTypes
 
     private function clear()
     {
-        $this->nodeType = self::NONE;
+        $this->nodeType = NodeType::NONE;
         $this->name = null;
         $this->value = null;
         $this->depth = 0;
