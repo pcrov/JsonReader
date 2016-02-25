@@ -1,0 +1,9 @@
+language: php
+
+php:
+  - 7
+  - nightly
+
+before_script:
+  - travis_retry composer self-update
+  - travis_retry composer install --no-interaction
