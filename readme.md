@@ -1,14 +1,10 @@
-Work in progress. It's functioning but missing some tests. Use at your peril.
-
 # JsonReader
 
 [![Build Status](https://travis-ci.org/pcrov/JsonReader.svg?branch=master)](https://travis-ci.org/pcrov/JsonReader)
-<!--
 [![License](https://poser.pugx.org/pcrov/jsonreader/license)](https://github.com/pcrov/JsonReader/blob/master/LICENSE)
 [![Latest Stable Version](https://poser.pugx.org/pcrov/jsonreader/v/stable)](https://packagist.org/packages/pcrov/jsonreader)
 [![Total Downloads](https://poser.pugx.org/pcrov/jsonreader/downloads)](https://packagist.org/packages/pcrov/jsonreader)
 [![Latest Unstable Version](https://poser.pugx.org/pcrov/jsonreader/v/unstable)](https://packagist.org/packages/pcrov/jsonreader)
--->
 
 This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON.
 
@@ -31,13 +27,11 @@ PHP 7 and the Intl extension
 
 ## Installation
 
-<!--
 To install with composer:
 
 ```sh
 composer require pcrov/jsonreader
 ```
--->
 
 ## Usage
 
