@@ -53,6 +53,8 @@ class JsonReader
     private $depth = 0;
 
     /**
+     * Close the JsonReader input.
+     *
      * @return void
      */
     public function close()
@@ -62,6 +64,8 @@ class JsonReader
     }
 
     /**
+     * Depth of the node in the tree, starting at 0.
+     *
      * @return int
      */
     public function getDepth() : int
@@ -70,6 +74,8 @@ class JsonReader
     }
 
     /**
+     * Name of the current node if any (for object properties).
+     *
      * @return string|null
      */
     public function getName()
@@ -78,7 +84,9 @@ class JsonReader
     }
 
     /**
-     * @return int
+     * Type of the current node.
+     *
+     * @return int One of the JsonReader constants.
      */
     public function getNodeType() : int
     {
@@ -86,6 +94,15 @@ class JsonReader
     }
 
     /**
+     * Value of the current node.
+     *
+     * For array and object nodes this will be evaluated on demand.
+     *
+     * Objects will be returned as arrays with strings for keys. Trying to return stdClass objects would gain nothing
+     * but exposure to edge cases where valid JSON produces property names that are not allowed in PHP objects (e.g. ""
+     * or "\u0000".) The behavior of `json_decode()` in these cases is inconsistent and can introduce key collisions, so
+     * we'll not be following its lead.
+     *
      * @return mixed
      */
     public function getValue()
@@ -102,6 +119,10 @@ class JsonReader
     }
 
     /**
+     * Initializes the reader with the given parser.
+     *
+     * You do not need to call this if you're using one of the json() or open() methods.
+     *
      * @param \Traversable $parser
      * @return void
      */
@@ -115,6 +136,10 @@ class JsonReader
     }
 
     /**
+     * Initializes the reader with the given JSON string.
+     *
+     * This convenience method handles creating the parser and relevant dependencies.
+     *
      * @param string $json
      * @return void
      */
@@ -124,6 +149,10 @@ class JsonReader
     }
 
     /**
+     * Move to the next node, skipping subtrees.
+     *
+     * If a name is given it will continue until a node of that name is reached.
+     *
      * @param string|null $name
      * @return bool
      * @throws Exception
@@ -155,6 +184,10 @@ class JsonReader
     }
 
     /**
+     * Initializes the reader with the given file URI.
+     *
+     * This convenience method handles creating the parser and relevant dependencies.
+     *
      * @param string $uri
      * @return void
      */
@@ -164,6 +197,8 @@ class JsonReader
     }
 
     /**
+     * Move to the next node.
+     *
      * @return bool
      * @throws Exception
      */
@@ -199,6 +234,12 @@ class JsonReader
         return true;
     }
 
+    /**
+     * Builds a compound node recursively.
+     *
+     * @param int $type Must be NodeType::ARRAY or NodeType::OBJECT.
+     * @return array
+     */
     private function buildTree(int $type) : array
     {
         assert($type === NodeType::ARRAY || $type === NodeType::OBJECT);
@@ -230,6 +271,11 @@ class JsonReader
         return $result;
     }
 
+    /**
+     * Resets the node to the initial state.
+     *
+     * @return void
+     */
     private function resetNode()
     {
         $this->nodeType = NodeType::NONE;
