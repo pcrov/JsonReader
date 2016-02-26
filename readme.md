@@ -16,7 +16,7 @@ Assumes UTF-8 encoded JSON, though does not strictly enforce it.
 
 ## Requirements
 
-PHP 7+ and the Intl extension
+PHP 7 and the Intl extension
 
 ## Installation
 
@@ -33,17 +33,82 @@ composer require pcrov/jsonreader
 JsonReader's api and behavior is very much like [XMLReader](http://php.net/xmlreader). If you've worked with that then
 this will feel familiar.
 
+---
+
+### Example 1
+```php
+use pcrov\JsonReader\JsonReader;
+
+$json = <<<'JSON'
+{
+    "type": "donut",
+    "name": "Cake",
+    "toppings": [
+        { "id": 5002, "type": "Glazed" },
+        { "id": 5006, "type": "Chocolate with Sprinkles" },
+        { "id": 5004, "type": "Maple" }
+    ]
+}
+JSON;
+
+$reader = new JsonReader();
+$reader->json($json);
+
+while ($reader->read()) {
+    if ($reader->getNodeType() === JsonReader::NUMBER) {
+        printf("%s: %d\n", $reader->getName(), $reader->getValue());
+    }
+}
+$reader->close();
+```
+Output:
+```
+id: 5002
+id: 5006
+id: 5004
+```
+
+---
+
+### Example 2
+
+(With the JSON string from example 1 in a file named "data.json".)
+
+```php
+use pcrov\JsonReader\JsonReader;
+
+$reader = new JsonReader();
+$reader->open("data.json");
+
+while ($reader->read("type")) {
+    echo $reader->getValue(), "\n";
+}
+$reader->close();
+```
+Output:
+```
+donut
+Glazed
+Chocolate with Sprinkles
+Maple
+```
+
+---
+
 ### Class synopsis
 ```php
 class JsonReader
 {
-    const NONE;
-    const STRING;
-    const NUMBER;
-    const BOOL;
-    const NULL;
-    const ARRAY;
-    const OBJECT;
+    /* Node types */
+    const NONE = 0;
+    const STRING = 1;
+    const NUMBER = 2;
+    const BOOL = 3;
+    const NULL = 4;
+    const ARRAY = 5;
+    const END_ARRAY = 6;
+    const OBJECT = 7;
+    const END_OBJECT = 8;
     
     /**
      * Close the JsonReader input.
@@ -130,19 +195,13 @@ class JsonReader
 
     /**
      * Move to the next node.
-     * 
+     *
+     * If a name is given it will continue until a node of that name is reached.
+     *
+     * @param string|null $name
      * @return bool
      * @throws \pcrov\JsonReader\Exception
      */
-    public function read() : bool;
+    public function read(string $name = null) : bool
 }
-```
-
-\* Trying to return stdClass objects gains us nothing but exposure to edge cases where valid JSON produces property names
-that are not allowed in PHP objects (e.g. "" or "\u0000".) The behavior of `json_decode()` in these cases is inconsistent
-and can introduce key collisions, so we'll not be following its lead.
-
-### Example
-```php
-use pcrov\JsonReader\JsonReader;
 ```

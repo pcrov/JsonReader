@@ -14,6 +14,7 @@ use pcrov\JsonReader\Parser\Lexer;
  */
 class JsonReader
 {
+    /* Node types */
     const NONE = 0;
     const STRING = 1;
     const NUMBER = 2;
