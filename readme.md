@@ -1,4 +1,4 @@
-Work in progress. It's functioning but missing tests. Use at your own peril.
+Work in progress. It's functioning but missing some tests. Use at your peril.
 
 # JsonReader
 
@@ -12,7 +12,18 @@ Work in progress. It's functioning but missing tests. Use at your own peril.
 
 This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON.
 
-Assumes UTF-8 encoded JSON, though does not strictly enforce it.
+If you are not memory-limited you should be using [`json_decode()`](http://php.net/json_decode) as it is *significantly*
+faster than parsing with user-land PHP.
+
+It's when you are dealing with documents large enough that memory becomes an issue that you'll want a streaming
+parser - either a pull parser like this, or a SAX-style push parser. For a good overview of the difference between push
+and pull parsers see [*XML reader models: SAX versus XML pull parser*](http://www.firstobject.com/xml-reader-sax-vs-xml-pull-parser.htm) -
+the article focuses on XML but the same concepts apply.
+
+One other case for streaming parsers is if you've got some unusual JSON that includes duplicate names on an object's
+properties. This is allowed by the JSON specification, but `json_decode()` (and the majority of other implementations)
+will clobber properties as their keys collide. Streaming parsers allow you to access an element at a time and retrieve
+data that might otherwise disappear.
 
 ## Requirements
 
@@ -32,6 +43,8 @@ composer require pcrov/jsonreader
 
 JsonReader's api and behavior is very much like [XMLReader](http://php.net/xmlreader). If you've worked with that then
 this will feel familiar.
+
+Note: this parser assumes UTF-8 encoded JSON but does not strictly enforce it.
 
 ---
 
@@ -72,7 +85,7 @@ id: 5004
 
 ### Example 2
 
-(With the JSON string from example 1 in a file named "data.json".)
+(With the JSON from example 1 in a file named "data.json".)
 
 ```php
 use pcrov\JsonReader\JsonReader;
@@ -143,10 +156,12 @@ class JsonReader
      *
      * For array and object nodes this will be evaluated on demand.
      *
-     * Objects will be returned as arrays with strings for keys. Trying to return stdClass objects would gain nothing
-     * but exposure to edge cases where valid JSON produces property names that are not allowed in PHP objects (e.g. ""
-     * or "\u0000".) The behavior of `json_decode()` in these cases is inconsistent and can introduce key collisions, so
-     * we'll not be following its lead.
+     * Objects will be returned as arrays with strings for keys. Trying to
+     * return stdClass objects would gain nothing but exposure to edge cases
+     * where valid JSON produces property names that are not allowed in PHP
+     * objects (e.g. "" or "\u0000".) The behavior of json_decode() in these
+     * cases is inconsistent and can introduce key collisions, so we'll not be
+     * following its lead.
      *
      * @return mixed
      */
@@ -155,7 +170,8 @@ class JsonReader
     /**
      * Initializes the reader with the given parser.
      *
-     * You do not need to call this if you're using one of the json() or open() methods.
+     * You do not need to call this if you're using one of the json() or open()
+     * methods.
      *
      * @param \Traversable $parser
      * @return void
@@ -165,7 +181,8 @@ class JsonReader
     /**
      * Initializes the reader with the given JSON string.
      *
-     * This convenience method handles creating the parser and relevant dependencies.
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
      *
      * @param string $json
      * @return void
@@ -175,7 +192,8 @@ class JsonReader
     /**
      * Move to the next node, skipping subtrees.
      *
-     * If a name is given it will continue until a node of that name is reached.
+     * If a name is given it will continue until a node of that name is
+     * reached.
      *
      * @param string|null $name
      * @return bool
@@ -186,7 +204,8 @@ class JsonReader
     /**
      * Initializes the reader with the given file URI.
      *
-     * This convenience method handles creating the parser and relevant dependencies.
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
      * 
      * @param string $uri
      * @return void
@@ -196,7 +215,8 @@ class JsonReader
     /**
      * Move to the next node.
      *
-     * If a name is given it will continue until a node of that name is reached.
+     * If a name is given it will continue until a node of that name is
+     * reached.
      *
      * @param string|null $name
      * @return bool
