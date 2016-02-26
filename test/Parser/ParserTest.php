@@ -2,7 +2,7 @@
 
 namespace pcrov\JsonReader\Parser;
 
-use pcrov\JsonReader\NodeType;
+use pcrov\JsonReader\JsonReader;
 
 class ParserTest extends \PHPUnit_Framework_TestCase
 {
@@ -52,7 +52,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_STRING, "foo"],
                 ],
                 [
-                    [NodeType::STRING, null, "foo", 0],
+                    [JsonReader::STRING, null, "foo", 0],
                 ]
             ],
             [
@@ -60,7 +60,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_NUMBER, 42],
                 ],
                 [
-                    [NodeType::NUMBER, null, 42, 0],
+                    [JsonReader::NUMBER, null, 42, 0],
                 ]
             ],
             [
@@ -68,7 +68,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_TRUE, true],
                 ],
                 [
-                    [NodeType::BOOL, null, true, 0],
+                    [JsonReader::BOOL, null, true, 0],
                 ]
             ],
             [
@@ -76,7 +76,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_FALSE, false],
                 ],
                 [
-                    [NodeType::BOOL, null, false, 0],
+                    [JsonReader::BOOL, null, false, 0],
                 ]
             ],
             [
@@ -84,7 +84,7 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_NULL, null],
                 ],
                 [
-                    [NodeType::NULL, null, null, 0],
+                    [JsonReader::NULL, null, null, 0],
                 ]
             ],
             [
@@ -93,8 +93,8 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_ARRAY, null],
                 ],
                 [
-                    [NodeType::ARRAY, null, null, 0],
-                    [NodeType::END_ARRAY, null, null, 0],
+                    [JsonReader::ARRAY, null, null, 0],
+                    [JsonReader::END_ARRAY, null, null, 0],
                 ]
             ],
             [
@@ -109,12 +109,12 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_ARRAY, null],
                 ],
                 [
-                    [NodeType::ARRAY, null, null, 0],
-                    [NodeType::BOOL, null, false, 1],
-                    [NodeType::ARRAY, null, null, 1],
-                    [NodeType::END_ARRAY, null, null, 1],
-                    [NodeType::NUMBER, null, 42, 1],
-                    [NodeType::END_ARRAY, null, null, 0],
+                    [JsonReader::ARRAY, null, null, 0],
+                    [JsonReader::BOOL, null, false, 1],
+                    [JsonReader::ARRAY, null, null, 1],
+                    [JsonReader::END_ARRAY, null, null, 1],
+                    [JsonReader::NUMBER, null, 42, 1],
+                    [JsonReader::END_ARRAY, null, null, 0],
                 ]
             ],
             [
@@ -123,8 +123,8 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_OBJECT, null],
                 ],
                 [
-                    [NodeType::OBJECT, null, null, 0],
-                    [NodeType::END_OBJECT, null, null, 0],
+                    [JsonReader::OBJECT, null, null, 0],
+                    [JsonReader::END_OBJECT, null, null, 0],
                 ]
             ],
             [
@@ -145,12 +145,12 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                     [Tokenizer::T_END_OBJECT, null],
                 ],
                 [
-                    [NodeType::OBJECT, null, null, 0],
-                    [NodeType::BOOL, "foo", false, 1],
-                    [NodeType::ARRAY, "bar", null, 1],
-                    [NodeType::END_ARRAY, "bar", null, 1],
-                    [NodeType::NUMBER, "answer", 42, 1],
-                    [NodeType::END_OBJECT, null, null, 0],
+                    [JsonReader::OBJECT, null, null, 0],
+                    [JsonReader::BOOL, "foo", false, 1],
+                    [JsonReader::ARRAY, "bar", null, 1],
+                    [JsonReader::END_ARRAY, "bar", null, 1],
+                    [JsonReader::NUMBER, "answer", 42, 1],
+                    [JsonReader::END_OBJECT, null, null, 0],
                 ]
             ],
         ];

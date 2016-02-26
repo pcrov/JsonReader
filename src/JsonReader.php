@@ -14,13 +14,15 @@ use pcrov\JsonReader\Parser\Lexer;
  */
 class JsonReader
 {
-    const NONE = NodeType::NONE;
-    const STRING = NodeType::STRING;
-    const NUMBER = NodeType::NUMBER;
-    const BOOL = NodeType::BOOL;
-    const NULL = NodeType::NULL;
-    const ARRAY = NodeType::ARRAY;
-    const OBJECT = NodeType::OBJECT;
+    const NONE = 0;
+    const STRING = 1;
+    const NUMBER = 2;
+    const BOOL = 3;
+    const NULL = 4;
+    const ARRAY = 5;
+    const END_ARRAY = 6;
+    const OBJECT = 7;
+    const END_OBJECT = 8;
 
     /**
      * @var IteratorStackIterator|null
@@ -35,7 +37,7 @@ class JsonReader
     /**
      * @var int
      */
-    private $nodeType = NodeType::NONE;
+    private $nodeType = self::NONE;
 
     /**
      * @var string|null
@@ -109,7 +111,7 @@ class JsonReader
     {
         $nodeType = $this->getNodeType();
 
-        if ($this->value === null && ($nodeType === NodeType::ARRAY || $nodeType === NodeType::OBJECT)) {
+        if ($this->value === null && ($nodeType === self::ARRAY || $nodeType === self::OBJECT)) {
             $this->value = $this->buildTree($nodeType);
             $this->parser->push(new \ArrayIterator($this->parseCache));
             $this->parseCache = [];
@@ -224,7 +226,7 @@ class JsonReader
         ) = $parser->current();
         //@formatter:on
 
-        if ($this->nodeType === NodeType::END_ARRAY || $this->nodeType === NodeType::END_OBJECT) {
+        if ($this->nodeType === self::END_ARRAY || $this->nodeType === self::END_OBJECT) {
             $parser->next();
             return $this->read();
         }
@@ -237,14 +239,14 @@ class JsonReader
     /**
      * Builds a compound node recursively.
      *
-     * @param int $type Must be NodeType::ARRAY or NodeType::OBJECT.
+     * @param int $type Must be self::ARRAY or self::OBJECT.
      * @return array
      */
     private function buildTree(int $type) : array
     {
-        assert($type === NodeType::ARRAY || $type === NodeType::OBJECT);
+        assert($type === self::ARRAY || $type === self::OBJECT);
         $parser = $this->parser;
-        $end = ($type === NodeType::ARRAY) ? NodeType::END_ARRAY : NodeType::END_OBJECT;
+        $end = ($type === self::ARRAY) ? self::END_ARRAY : self::END_OBJECT;
         $result = [];
 
         while (true) {
@@ -257,7 +259,7 @@ class JsonReader
                 break;
             }
 
-            if ($type === NodeType::ARRAY || $type === NodeType::OBJECT) {
+            if ($type === self::ARRAY || $type === self::OBJECT) {
                 $value = $this->buildTree($type);
             }
 
@@ -278,7 +280,7 @@ class JsonReader
      */
     private function resetNode()
     {
-        $this->nodeType = NodeType::NONE;
+        $this->nodeType = self::NONE;
         $this->name = null;
         $this->value = null;
         $this->depth = 0;
