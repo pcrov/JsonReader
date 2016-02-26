@@ -101,10 +101,12 @@ class JsonReader
      *
      * For array and object nodes this will be evaluated on demand.
      *
-     * Objects will be returned as arrays with strings for keys. Trying to return stdClass objects would gain nothing
-     * but exposure to edge cases where valid JSON produces property names that are not allowed in PHP objects (e.g. ""
-     * or "\u0000".) The behavior of `json_decode()` in these cases is inconsistent and can introduce key collisions, so
-     * we'll not be following its lead.
+     * Objects will be returned as arrays with strings for keys. Trying to
+     * return stdClass objects would gain nothing but exposure to edge cases
+     * where valid JSON produces property names that are not allowed in PHP
+     * objects (e.g. "" or "\u0000".) The behavior of json_decode() in these
+     * cases is inconsistent and can introduce key collisions, so we'll not be
+     * following its lead.
      *
      * @return mixed
      */
@@ -124,7 +126,8 @@ class JsonReader
     /**
      * Initializes the reader with the given parser.
      *
-     * You do not need to call this if you're using one of the json() or open() methods.
+     * You do not need to call this if you're using one of the json() or open()
+     * methods.
      *
      * @param \Traversable $parser
      * @return void
@@ -141,7 +144,8 @@ class JsonReader
     /**
      * Initializes the reader with the given JSON string.
      *
-     * This convenience method handles creating the parser and relevant dependencies.
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
      *
      * @param string $json
      * @return void
@@ -154,7 +158,8 @@ class JsonReader
     /**
      * Move to the next node, skipping subtrees.
      *
-     * If a name is given it will continue until a node of that name is reached.
+     * If a name is given it will continue until a node of that name is
+     * reached.
      *
      * @param string|null $name
      * @return bool
@@ -189,7 +194,8 @@ class JsonReader
     /**
      * Initializes the reader with the given file URI.
      *
-     * This convenience method handles creating the parser and relevant dependencies.
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
      *
      * @param string $uri
      * @return void
@@ -202,7 +208,8 @@ class JsonReader
     /**
      * Move to the next node.
      *
-     * If a name is given it will continue until a node of that name is reached.
+     * If a name is given it will continue until a node of that name is
+     * reached.
      *
      * @param string|null $name
      * @return bool
