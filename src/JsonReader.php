@@ -201,10 +201,13 @@ class JsonReader
     /**
      * Move to the next node.
      *
+     * If a name is given it will continue until a node of that name is reached.
+     *
+     * @param string|null $name
      * @return bool
      * @throws Exception
      */
-    public function read() : bool
+    public function read(string $name = null) : bool
     {
         $parser = $this->parser;
 
@@ -228,7 +231,16 @@ class JsonReader
 
         $parser->next();
 
-        return true;
+        $result = true;
+        if ($name !== null) {
+            do {
+                if ($this->name === $name) {
+                    break;
+                }
+            } while ($result = $this->read());
+        }
+
+        return $result;
     }
 
     /**
