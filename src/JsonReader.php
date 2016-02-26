@@ -226,11 +226,6 @@ class JsonReader
         ) = $parser->current();
         //@formatter:on
 
-        if ($this->nodeType === self::END_ARRAY || $this->nodeType === self::END_OBJECT) {
-            $parser->next();
-            return $this->read();
-        }
-
         $parser->next();
 
         return true;
