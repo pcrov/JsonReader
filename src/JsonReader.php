@@ -3,7 +3,9 @@
 namespace pcrov\JsonReader;
 
 use pcrov\IteratorStackIterator;
-use pcrov\JsonReader\InputStream\File;
+use pcrov\JsonReader\InputStream\IOException;
+use pcrov\JsonReader\InputStream\Stream;
+use pcrov\JsonReader\InputStream\Uri;
 use pcrov\JsonReader\InputStream\StringInput;
 use pcrov\JsonReader\Parser\Parser;
 use pcrov\JsonReader\Parser\Lexer;
@@ -56,7 +58,10 @@ class JsonReader
     private $depth = 0;
 
     /**
-     * Close the JsonReader input.
+     * Close the parser.
+     *
+     * If a file handle was passed to JsonReader::open() it will not
+     * be closed by calling this method. That is left to the caller.
      *
      * @return void
      */
@@ -192,17 +197,19 @@ class JsonReader
     }
 
     /**
-     * Initializes the reader with the given file URI.
+     * Initializes the reader with the given file URI or handle.
      *
      * This convenience method handles creating the parser and relevant
      * dependencies.
      *
-     * @param string $uri
+     * @param string|resource $file URI or file handle.
      * @return void
+     * @throws IOException if a given file handle is not readable.
      */
-    public function open(string $uri)
+    public function open($file)
     {
-        $this->init(new Parser(new Lexer(new File($uri))));
+        $bytestream = \is_resource($file) ? new Stream($file) : new Uri($file);
+        $this->init(new Parser(new Lexer($bytestream)));
     }
 
     /**

@@ -116,7 +116,10 @@ class JsonReader
     const END_OBJECT = 8;
     
     /**
-     * Close the JsonReader input.
+     * Close the parser.
+     *
+     * If a file handle was passed to JsonReader::open() it will not
+     * be closed by calling this method. That is left to the caller.
      *
      * @return void
      */
@@ -194,15 +197,16 @@ class JsonReader
     public function next(string $name = null) : bool;
 
     /**
-     * Initializes the reader with the given file URI.
+     * Initializes the reader with the given file URI or handle.
      *
      * This convenience method handles creating the parser and relevant
      * dependencies.
-     * 
-     * @param string $uri
+     *
+     * @param string|resource $file URI or file handle.
      * @return void
+     * @throws IOException if a given file handle is not readable.
      */
-    public function open(string $uri);
+    public function open($file);
 
     /**
      * Move to the next node.

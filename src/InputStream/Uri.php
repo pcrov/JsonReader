@@ -2,7 +2,7 @@
 
 namespace pcrov\JsonReader\InputStream;
 
-class File implements \IteratorAggregate
+class Uri implements \IteratorAggregate
 {
     private $uri;
 
@@ -19,14 +19,7 @@ class File implements \IteratorAggregate
         }
 
         try {
-            while (!feof($handle)) {
-                $buffer = fread($handle, 8192);
-                $length = strlen($buffer);
-                /** @noinspection ForeachInvariantsInspection */
-                for ($i = 0; $i < $length; $i++) {
-                    yield $buffer[$i];
-                }
-            }
+            yield from new Stream($handle);
         } finally {
             fclose($handle);
         }
