@@ -2,7 +2,7 @@
 
 namespace pcrov\JsonReader\InputStream;
 
-class Uri implements \IteratorAggregate
+final class Uri implements \IteratorAggregate
 {
     private $uri;
 

@@ -9,7 +9,7 @@ namespace pcrov\JsonReader\Parser;
  *
  * @package JsonReader
  */
-class Lexer implements \IteratorAggregate, Tokenizer
+final class Lexer implements \IteratorAggregate, Tokenizer
 {
     /**
      * @var \Traversable

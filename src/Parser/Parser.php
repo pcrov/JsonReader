@@ -4,7 +4,7 @@ namespace pcrov\JsonReader\Parser;
 
 use pcrov\JsonReader\JsonReader;
 
-class Parser implements \IteratorAggregate
+final class Parser implements \IteratorAggregate
 {
     /**
      * @var array Map of tokens to node types.

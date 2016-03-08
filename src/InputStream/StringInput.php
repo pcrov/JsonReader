@@ -2,7 +2,7 @@
 
 namespace pcrov\JsonReader\InputStream;
 
-class StringInput implements \IteratorAggregate
+final class StringInput implements \IteratorAggregate
 {
     private $string;
 
