@@ -80,7 +80,7 @@ class Parser implements \IteratorAggregate
         return false;
     }
 
-    private function getExceptionMessage(int $token = null) : string
+    private function getExceptionMessage(string $token = null) : string
     {
         $tokenizer = $this->tokenizer;
 
@@ -94,7 +94,7 @@ class Parser implements \IteratorAggregate
         return sprintf(
             "Line %d: Unexpected token %s.",
             $tokenizer->getLineNumber(),
-            $tokenizer::NAMES[$token]
+            $token
         );
     }
 
