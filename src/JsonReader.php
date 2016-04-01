@@ -33,7 +33,7 @@ class JsonReader
     private $parser;
 
     /**
-     * @var array[] Tuples from the parser, cached during tree building
+     * @var array[] Tuples from the parser, cached during tree building.
      */
     private $parseCache = [];
 

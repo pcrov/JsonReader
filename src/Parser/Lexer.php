@@ -17,7 +17,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     private $bytestream;
 
     /**
-     * @var \IteratorIterator Iterator of the $bytestream
+     * @var \IteratorIterator Iterator of the $bytestream.
      */
     private $byteIterator;
 
@@ -29,7 +29,9 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
     /**
      * Lexer constructor.
-     * @param \Traversable $bytestream Bytestream to lex. Each iteration should provide a single byte.
+     *
+     * @param \Traversable $bytestream Bytestream to lex. Each iteration should
+     *                                 provide a single byte.
      */
     public function __construct(\Traversable $bytestream)
     {
@@ -37,7 +39,8 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Reads from the bytestream and generates a token stream in the form of token => value.
+     * Reads from the bytestream and generates a token stream in the form of
+     * token => value.
      *
      * @return \Generator
      * @throws ParseException
@@ -113,7 +116,8 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Consumes and discards bytes from the byte iterator exactly matching the given string.
+     * Consumes and discards bytes from the byte iterator exactly matching the
+     * given string.
      *
      * @param string $string
      * @throws ParseException
@@ -198,14 +202,15 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      *
      * Doing it byte by byte is less fun, but here we are.
      *
-     * @param string $byte Initial byte. The bytestream cursor starts one position ahead of this.
+     * @param string $byte Initial byte. The bytestream cursor starts one
+     *                     position ahead of this.
      * @return float|int
      * @throws ParseException
      */
     private function evaluateNumber(string $byte)
     {
-        $iterator = $this->byteIterator;
         assert($byte === "-" || ctype_digit($byte));
+        $iterator = $this->byteIterator;
         $buffer = "";
 
         if ($byte === "-") {
@@ -222,12 +227,12 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             throw new ParseException($this->getExceptionMessage($byte));
         }
 
-        /**
-         * Catch up to the cursor. From here on we have to take care not to overshoot,
-         * else we risk losing the byte immediately following the number.
-         */
+        // Catch up to the cursor. From here on we have to take care not to
+        // overshoot, else we risk losing the byte immediately following the
+        // number.
         $byte = $iterator->current();
 
+        // Fractional part.
         if ($byte === ".") {
             $buffer .= $byte;
             $iterator->next();
@@ -240,6 +245,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             $byte = $iterator->current();
         }
 
+        // Exponent.
         if ($byte === "e" || $byte === "E") {
             $buffer .= $byte;
             $iterator->next();
@@ -258,11 +264,8 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             $buffer .= $this->scanDigits();
         }
 
-        /** @noinspection PhpWrongStringConcatenationInspection
-         *
-         * `+ 0` automatically casts to float or int, as appropriate.
-         */
-        return $buffer + 0;
+        // Automatically cast to int or float, as appropriate.
+        return +$buffer;
     }
 
     private function evaluateUnicodeSequence() : string
@@ -296,7 +299,8 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Scans a single UTF-8 codepoint, which can be up to four bytes long.
+     * Scans a single UTF-8 encoded Unicode codepoint, which can be up to four
+     * bytes long.
      *
      * A partial codepoint or invalid UTF-8 byte will be returned as-is.
      *
@@ -308,8 +312,10 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      *
      * @see https://en.wikipedia.org/wiki/UTF-8#Description
      *
-     * @param string $byte Initial byte. The bytestream cursor starts one position ahead of this.
-     * @return string The scanned full or partial codepoint, or invalid UTF-8 byte.
+     * @param string $byte Initial byte. The bytestream cursor starts one
+     *                     position ahead of this.
+     * @return string The scanned full or partial codepoint, or invalid UTF-8
+     *                byte.
      */
     private function fillCodepoint(string $byte) : string
     {

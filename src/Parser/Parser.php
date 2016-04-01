@@ -50,8 +50,8 @@ final class Parser implements \IteratorAggregate
      * Reads from the token stream, generates a data stream in the form of:
      *  [$type, $name, $value, $depth]
      *
-     * Objects and arrays will have no value. The consumer should use a tree builder
-     * to flesh these out as desired.
+     * Objects and arrays will have a value of null. The consumer should use a
+     * tree builder to flesh these out as desired.
      *
      * @return \Generator
      * @throws ParseException

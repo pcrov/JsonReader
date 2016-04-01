@@ -7,7 +7,8 @@ final class Stream implements \IteratorAggregate
     private $stream;
 
     /**
-     * @param resource $stream Readable stream handle, as those typically created with fopen.
+     * @param resource $stream Readable stream handle, as those typically
+     *                         created with fopen.
      * @throws IOException
      */
     public function __construct($stream)
