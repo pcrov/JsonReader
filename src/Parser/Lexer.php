@@ -270,13 +270,13 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
     private function evaluateUnicodeSequence() : string
     {
-        $codepoint = hexdec($this->scanUnicodeSequence());
+        $codepoint = (int)hexdec($this->scanUnicodeSequence());
 
         switch (\IntlChar::getBlockCode($codepoint)) {
             case \IntlChar::BLOCK_CODE_HIGH_PRIVATE_USE_SURROGATES:
             case \IntlChar::BLOCK_CODE_HIGH_SURROGATES:
                 $this->consumeLiteral("\\u");
-                $lowSurrogate = hexdec($this->scanUnicodeSequence());
+                $lowSurrogate = (int)hexdec($this->scanUnicodeSequence());
 
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
                     throw new ParseException(sprintf(

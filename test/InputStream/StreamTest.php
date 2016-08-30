@@ -13,7 +13,41 @@ class StreamTest extends \PHPUnit_Framework_TestCase
         fclose($handle);
     }
 
-    public function testStreamInputIOFailure()
+    public function testNotResourceFailure()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("A valid stream resource must be provided.");
+
+        new Stream("fail");
+    }
+
+    public function testNotStreamFailure()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("A valid stream resource must be provided.");
+
+        try {
+            $handle = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            new Stream($handle);
+        } finally {
+            socket_close($handle);
+        }
+    }
+
+    public function testDirStreamFailure()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("A valid stream resource must be provided.");
+
+        try {
+            $handle = opendir(__DIR__);
+            new Stream($handle);
+        } finally {
+            closedir($handle);
+        }
+    }
+
+    public function testUnreadableStreamFailure()
     {
         $this->expectException(IOException::class);
         $this->expectExceptionMessage("Stream must be readable. Given stream opened in mode: a");
