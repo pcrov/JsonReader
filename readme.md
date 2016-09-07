@@ -219,5 +219,28 @@ class JsonReader
      * @throws \pcrov\JsonReader\Exception
      */
     public function read(string $name = null) : bool
+
+    /**
+     * Initializes the reader with the given file URI.
+     *
+     * This is identical to calling open() with a URI.
+     *
+     * @param string $uri URI.
+     * @return void
+     * @throws IOException if a given URI is not readable.
+     */
+    public function setUri($uri);
+
+    /**
+     * Initializes the reader with the given file handle.
+     *
+     * This is identical to calling open() with a resource.
+     *
+     * @param resource $handle Readable file handle.
+     * @return void
+     * @throws \InvalidArgumentException if a given resource is not a valid stream.
+     * @throws IOException if a given stream resource is not readable.
+     */
+    public function setHandle($handle);
 }
 ```

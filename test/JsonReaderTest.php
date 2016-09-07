@@ -65,6 +65,22 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         while ($reader->read());
     }
 
+    public function testSetUri()
+    {
+        $reader = $this->reader;
+        $reader->setUri(__DIR__ . "/../composer.json");
+        while ($reader->read());
+    }
+
+    public function testSetHandle()
+    {
+        $reader = $this->reader;
+        $handle = fopen((__DIR__ . "/../composer.json"), "rb");
+        $reader->setHandle($handle);
+        while ($reader->read());
+        fclose($handle);
+    }
+
     public function testReadNoParser()
     {
         $this->expectException(Exception::class);

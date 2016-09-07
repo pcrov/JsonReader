@@ -131,8 +131,9 @@ class JsonReader
     /**
      * Initializes the reader with the given parser.
      *
-     * You do not need to call this if you're using one of the json() or open()
-     * methods.
+     * You do not need to call this if you're using one of json(), open(),
+     * setUri(), or  setHandle() methods. It's intended to be used with manual
+     * initialization of the parser, et al.
      *
      * @param \Traversable $parser
      * @return void
@@ -209,8 +210,7 @@ class JsonReader
      */
     public function open($file)
     {
-        $bytestream = \is_resource($file) ? new Stream($file) : new Uri($file);
-        $this->init(new Parser(new Lexer($bytestream)));
+        \is_resource($file) ? $this->setHandle($file) : $this->setUri($file);
     }
 
     /**
@@ -257,6 +257,35 @@ class JsonReader
         }
 
         return $result;
+    }
+
+    /**
+     * Initializes the reader with the given file URI.
+     *
+     * This is identical to calling open() with a URI.
+     *
+     * @param string $uri URI.
+     * @return void
+     * @throws IOException if a given URI is not readable.
+     */
+    public function setUri($uri)
+    {
+        $this->init(new Parser(new Lexer(new Uri($uri))));
+    }
+
+    /**
+     * Initializes the reader with the given file handle.
+     *
+     * This is identical to calling open() with a resource.
+     *
+     * @param resource $handle Readable file handle.
+     * @return void
+     * @throws \InvalidArgumentException if a given resource is not a valid stream.
+     * @throws IOException if a given stream resource is not readable.
+     */
+    public function setHandle($handle)
+    {
+        $this->init(new Parser(new Lexer(new Stream($handle))));
     }
 
     /**
