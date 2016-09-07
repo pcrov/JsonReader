@@ -2,6 +2,8 @@
 
 namespace pcrov\JsonReader\InputStream;
 
+use pcrov\JsonReader\InvalidArgumentException;
+
 class StreamTest extends \PHPUnit_Framework_TestCase
 {
     public function testStreamInput()
@@ -15,7 +17,7 @@ class StreamTest extends \PHPUnit_Framework_TestCase
 
     public function testNotResourceFailure()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("A valid stream resource must be provided.");
 
         new Stream("fail");
@@ -23,7 +25,7 @@ class StreamTest extends \PHPUnit_Framework_TestCase
 
     public function testNotStreamFailure()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("A valid stream resource must be provided.");
 
         try {
@@ -36,7 +38,7 @@ class StreamTest extends \PHPUnit_Framework_TestCase
 
     public function testDirStreamFailure()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("A valid stream resource must be provided.");
 
         try {

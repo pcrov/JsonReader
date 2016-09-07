@@ -2,6 +2,8 @@
 
 namespace pcrov\JsonReader\InputStream;
 
+use pcrov\JsonReader\InvalidArgumentException;
+
 final class Stream implements \IteratorAggregate
 {
     private $stream;
@@ -9,7 +11,7 @@ final class Stream implements \IteratorAggregate
     /**
      * @param resource $stream Readable stream handle, as those typically
      *                         created with fopen.
-     * @throws \InvalidArgumentException if the given argument is not a valid stream resource.
+     * @throws InvalidArgumentException if the given argument is not a valid stream resource.
      * @throws IOException if the given stream resource is not readable.
      */
     public function __construct($stream)
@@ -19,7 +21,7 @@ final class Stream implements \IteratorAggregate
             get_resource_type($stream) !== "stream" ||
             stream_get_meta_data($stream)["stream_type"] === "dir"
         ) {
-            throw new \InvalidArgumentException("A valid stream resource must be provided.");
+            throw new InvalidArgumentException("A valid stream resource must be provided.");
         }
 
         $mode = stream_get_meta_data($stream)["mode"];
