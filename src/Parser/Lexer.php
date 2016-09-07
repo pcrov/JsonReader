@@ -48,12 +48,12 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     public function getIterator() : \Generator
     {
         $this->initByteIterator();
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $this->line = 1;
 
-        while ($iterator->valid()) {
-            $byte = $iterator->current();
-            $iterator->next();
+        while ($bytes->valid()) {
+            $byte = $bytes->current();
+            $bytes->next();
             switch ($byte) {
                 case " ":
                 case "\t":
@@ -63,8 +63,8 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                     break;
                 case "\r":
                     $this->line++;
-                    if ($iterator->current() === "\n") {
-                        $iterator->next();
+                    if ($bytes->current() === "\n") {
+                        $bytes->next();
                     }
                     break;
                 case ":":
@@ -124,13 +124,13 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      */
     private function consumeLiteral(string $string)
     {
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $length = strlen($string);
 
         /** @noinspection ForeachInvariantsInspection */
         for ($i = 0; $i < $length; $i++) {
-            $byte = $iterator->current();
-            $iterator->next();
+            $byte = $bytes->current();
+            $bytes->next();
             if ($byte !== $string[$i]) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
@@ -139,9 +139,9 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
     private function evaluateEscapeSequence() : string
     {
-        $iterator = $this->byteIterator;
-        $byte = $iterator->current();
-        $iterator->next();
+        $bytes = $this->byteIterator;
+        $byte = $bytes->current();
+        $bytes->next();
 
         switch ($byte) {
             case '"':
@@ -168,12 +168,12 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
     private function evaluateDoubleQuotedString() : string
     {
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $buffer = "";
 
-        while ($iterator->valid()) {
-            $byte = $iterator->current();
-            $iterator->next();
+        while ($bytes->valid()) {
+            $byte = $bytes->current();
+            $bytes->next();
 
             if ($byte === '"') {
                 return $buffer;
@@ -210,13 +210,13 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     private function evaluateNumber(string $byte)
     {
         assert($byte === "-" || ctype_digit($byte));
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $buffer = "";
 
         if ($byte === "-") {
             $buffer .= $byte;
-            $byte = $iterator->current();
-            $iterator->next();
+            $byte = $bytes->current();
+            $bytes->next();
         }
 
         if ($byte === "0") {
@@ -230,35 +230,35 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         // Catch up to the cursor. From here on we have to take care not to
         // overshoot, else we risk losing the byte immediately following the
         // number.
-        $byte = $iterator->current();
+        $byte = $bytes->current();
 
         // Fractional part.
         if ($byte === ".") {
             $buffer .= $byte;
-            $iterator->next();
-            $byte = $iterator->current();
-            $iterator->next();
+            $bytes->next();
+            $byte = $bytes->current();
+            $bytes->next();
             if (!ctype_digit($byte)) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
             $buffer .= $byte . $this->scanDigits();
-            $byte = $iterator->current();
+            $byte = $bytes->current();
         }
 
         // Exponent.
         if ($byte === "e" || $byte === "E") {
             $buffer .= $byte;
-            $iterator->next();
-            $byte = $iterator->current();
+            $bytes->next();
+            $byte = $bytes->current();
 
             if ($byte === "-" || $byte === "+") {
                 $buffer .= $byte;
-                $iterator->next();
-                $byte = $iterator->current();
+                $bytes->next();
+                $byte = $bytes->current();
             }
 
             if (!ctype_digit($byte)) {
-                $iterator->next();
+                $bytes->next();
                 throw new ParseException($this->getExceptionMessage($byte));
             }
             $buffer .= $this->scanDigits();
@@ -319,7 +319,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      */
     private function fillCodepoint(string $byte) : string
     {
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $codepoint = $byte;
         $ord = ord($codepoint);
 
@@ -333,15 +333,15 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             return $codepoint;
         }
 
-        while ($iterator->valid() && $expect > 0) {
-            $byte = $iterator->current();
+        while ($bytes->valid() && $expect > 0) {
+            $byte = $bytes->current();
 
             if ((ord($byte) >> 6) ^ 0b10) {
                 break;
             }
 
             $codepoint .= $byte;
-            $iterator->next();
+            $bytes->next();
             $expect--;
         }
 
@@ -382,19 +382,19 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
     private function initByteIterator()
     {
-        $iterator = new \IteratorIterator($this->bytestream);
-        $iterator->rewind();
-        $this->byteIterator = $iterator;
+        $bytes = new \IteratorIterator($this->bytestream);
+        $bytes->rewind();
+        $this->byteIterator = $bytes;
     }
 
     private function scanDigits() : string
     {
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $digits = "";
 
-        while (ctype_digit($iterator->current())) {
-            $digits .= $iterator->current();
-            $iterator->next();
+        while (ctype_digit($bytes->current())) {
+            $digits .= $bytes->current();
+            $bytes->next();
         }
 
         return $digits;
@@ -410,12 +410,12 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      */
     private function scanUnicodeSequence() : string
     {
-        $iterator = $this->byteIterator;
+        $bytes = $this->byteIterator;
         $sequence = "";
 
         for ($i = 0; $i < 4; $i++) {
-            $byte = $iterator->current();
-            $iterator->next();
+            $byte = $bytes->current();
+            $bytes->next();
             if (!ctype_xdigit($byte)) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }

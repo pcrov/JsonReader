@@ -61,20 +61,20 @@ final class Parser implements \IteratorAggregate
         $this->initTokenizer();
         $this->name = null;
         $this->depth = 0;
-        $iterator = $this->tokenIterator;
+        $tokens = $this->tokenIterator;
 
         yield from $this->parseValue();
 
-        if ($iterator->valid()) {
-            throw new ParseException($this->getExceptionMessage($iterator->key()));
+        if ($tokens->valid()) {
+            throw new ParseException($this->getExceptionMessage($tokens->key()));
         }
     }
 
     private function consumeComma() : bool
     {
-        $iterator = $this->tokenIterator;
-        if ($iterator->key() === Tokenizer::T_COMMA) {
-            $iterator->next();
+        $tokens = $this->tokenIterator;
+        if ($tokens->key() === Tokenizer::T_COMMA) {
+            $tokens->next();
             return true;
         }
         return false;
@@ -100,29 +100,29 @@ final class Parser implements \IteratorAggregate
 
     private function initTokenizer()
     {
-        $iterator = new \IteratorIterator($this->tokenizer);
-        $iterator->rewind();
-        $this->tokenIterator = $iterator;
+        $tokens = new \IteratorIterator($this->tokenizer);
+        $tokens->rewind();
+        $this->tokenIterator = $tokens;
     }
 
     private function parseArray() : \Generator
     {
-        $iterator = $this->tokenIterator;
-        assert($iterator->key() === Tokenizer::T_BEGIN_ARRAY);
+        $tokens = $this->tokenIterator;
+        assert($tokens->key() === Tokenizer::T_BEGIN_ARRAY);
 
         $name = $this->name;
         yield [JsonReader::ARRAY, $name, null, $this->depth];
 
         $this->name = null;
         $this->depth++;
-        $iterator->next();
-        $token = $iterator->key();
+        $tokens->next();
+        $token = $tokens->key();
 
         if ($token !== Tokenizer::T_END_ARRAY) {
             do {
                 yield from $this->parseValue();
             } while ($this->consumeComma());
-            $token = $iterator->key();
+            $token = $tokens->key();
         }
 
         if ($token !== Tokenizer::T_END_ARRAY) {
@@ -131,27 +131,27 @@ final class Parser implements \IteratorAggregate
 
         $this->depth--;
         yield [JsonReader::END_ARRAY, $name, null, $this->depth];
-        $iterator->next();
+        $tokens->next();
     }
 
     private function parseObject() : \Generator
     {
-        $iterator = $this->tokenIterator;
-        assert($iterator->key() === Tokenizer::T_BEGIN_OBJECT);
+        $tokens = $this->tokenIterator;
+        assert($tokens->key() === Tokenizer::T_BEGIN_OBJECT);
 
         $name = $this->name;
         yield [JsonReader::OBJECT, $name, null, $this->depth];
 
         $this->depth++;
-        $iterator->next();
-        $token = $iterator->key();
+        $tokens->next();
+        $token = $tokens->key();
 
         // name:value property pairs
         if ($token === Tokenizer::T_STRING) {
             do {
                 yield from $this->parsePair();
             } while ($this->consumeComma());
-            $token = $iterator->key();
+            $token = $tokens->key();
         }
 
         if ($token !== Tokenizer::T_END_OBJECT) {
@@ -160,24 +160,24 @@ final class Parser implements \IteratorAggregate
 
         $this->depth--;
         yield [JsonReader::END_OBJECT, $name, null, $this->depth];
-        $iterator->next();
+        $tokens->next();
     }
 
     private function parsePair() : \Generator
     {
-        $iterator = $this->tokenIterator;
-        assert($iterator->key() === Tokenizer::T_STRING);
+        $tokens = $this->tokenIterator;
+        assert($tokens->key() === Tokenizer::T_STRING);
 
         // name
-        $this->name = $iterator->current();
-        $iterator->next();
+        $this->name = $tokens->current();
+        $tokens->next();
 
         // :
-        $token = $iterator->key();
+        $token = $tokens->key();
         if ($token !== Tokenizer::T_COLON) {
             throw new ParseException($this->getExceptionMessage($token));
         }
-        $iterator->next();
+        $tokens->next();
 
         // value
         yield from $this->parseValue();
@@ -186,17 +186,17 @@ final class Parser implements \IteratorAggregate
 
     private function parseValue() : \Generator
     {
-        $iterator = $this->tokenIterator;
+        $tokens = $this->tokenIterator;
 
-        $token = $iterator->key();
+        $token = $tokens->key();
         switch ($token) {
             case Tokenizer::T_STRING:
             case Tokenizer::T_NUMBER:
             case Tokenizer::T_TRUE:
             case Tokenizer::T_FALSE:
             case Tokenizer::T_NULL:
-                yield [$this->tokenTypeMap[$token], $this->name, $iterator->current(), $this->depth];
-                $iterator->next();
+                yield [$this->tokenTypeMap[$token], $this->name, $tokens->current(), $this->depth];
+                $tokens->next();
                 break;
             case Tokenizer::T_BEGIN_ARRAY:
                 yield from $this->parseArray();
