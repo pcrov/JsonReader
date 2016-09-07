@@ -204,7 +204,8 @@ class JsonReader
      *
      * @param string|resource $file URI or file handle.
      * @return void
-     * @throws IOException if a given file handle is not readable.
+     * @throws InvalidArgumentException if a given resource is not a valid stream.
+     * @throws IOException if a given stream resource is not readable.
      */
     public function open($file);
 
@@ -238,7 +239,7 @@ class JsonReader
      *
      * @param resource $handle Readable file handle.
      * @return void
-     * @throws \InvalidArgumentException if a given resource is not a valid stream.
+     * @throws InvalidArgumentException if a given resource is not a valid stream.
      * @throws IOException if a given stream resource is not readable.
      */
     public function setHandle($handle);
