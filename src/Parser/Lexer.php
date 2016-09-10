@@ -127,7 +127,6 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         $bytes = $this->byteIterator;
         $length = strlen($string);
 
-        /** @noinspection ForeachInvariantsInspection */
         for ($i = 0; $i < $length; $i++) {
             $byte = $bytes->current();
             $bytes->next();
