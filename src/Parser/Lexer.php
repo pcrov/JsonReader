@@ -158,7 +158,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             case "t":
                 return "\t";
             case "u":
-                return $this->evaluateUnicodeSequence();
+                return $this->evaluateEscapedUnicodeSequence();
             default:
                 throw new ParseException($this->getExceptionMessage($byte));
         }
@@ -267,15 +267,22 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         return +$buffer;
     }
 
-    private function evaluateUnicodeSequence() : string
+    /**
+     * Evaluates the current escaped unicode sequence
+     * (beginning after leading the \u).
+     *
+     * @return string The evaluated character.
+     * @throws ParseException
+     */
+    private function evaluateEscapedUnicodeSequence() : string
     {
-        $codepoint = (int)hexdec($this->scanUnicodeSequence());
+        $codepoint = (int)hexdec($this->scanEscapedUnicodeSequence());
 
         switch (\IntlChar::getBlockCode($codepoint)) {
             case \IntlChar::BLOCK_CODE_HIGH_PRIVATE_USE_SURROGATES:
             case \IntlChar::BLOCK_CODE_HIGH_SURROGATES:
                 $this->consumeLiteral("\\u");
-                $lowSurrogate = (int)hexdec($this->scanUnicodeSequence());
+                $lowSurrogate = (int)hexdec($this->scanEscapedUnicodeSequence());
 
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
                     throw new ParseException(sprintf(
@@ -400,14 +407,14 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Scans the current unicode sequence.
+     * Scans the current escaped unicode sequence, sans leading \u.
      *
-     * A unicode sequence is a string of four hexadecimal characters.
+     * An escaped unicode sequence is a string of four hexadecimal characters.
      *
      * @return string The scanned sequence.
      * @throws ParseException
      */
-    private function scanUnicodeSequence() : string
+    private function scanEscapedUnicodeSequence() : string
     {
         $bytes = $this->byteIterator;
         $sequence = "";
