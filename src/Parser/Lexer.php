@@ -178,14 +178,21 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                 return $buffer;
             }
 
-            if ($byte <= "\x1f") {
-                throw new ParseException($this->getExceptionMessage($byte));
+            $chr = $this->scanCodepoint($byte);
+
+            if (\IntlChar::iscntrl($chr)) {
+                throw new ParseException(
+                    sprintf(
+                        "Line %d: Unexpected control character \\u{%X}.",
+                        $this->getLineNumber(), \IntlChar::ord($chr)
+                    )
+                );
             }
 
-            if ($byte === "\\") {
+            if ($chr === "\\") {
                 $buffer .= $this->evaluateEscapeSequence();
             } else {
-                $buffer .= $byte;
+                $buffer .= $chr;
             }
         }
 
@@ -308,8 +315,6 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * Scans a single UTF-8 encoded Unicode codepoint, which can be up to four
      * bytes long.
      *
-     * A partial codepoint or invalid UTF-8 byte will be returned as-is.
-     *
      *  0xxx xxxx   Single-byte codepoint.
      *  110x xxxx   First of a two-byte codepoint.
      *  1110 xxxx   First of three.
@@ -317,13 +322,14 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      *  10xx xxxx   A continuation of any of the three preceding.
      *
      * @see https://en.wikipedia.org/wiki/UTF-8#Description
+     * @see http://www.unicode.org/versions/Unicode9.0.0/ch03.pdf#page=54
      *
      * @param string $byte Initial byte. The bytestream cursor starts one
      *                     position ahead of this.
-     * @return string The scanned full or partial codepoint, or invalid UTF-8
-     *                byte.
+     * @return string The scanned codepoint.
+     * @throws ParseException on ill-formed UTF-8.
      */
-    private function fillCodepoint(string $byte) : string
+    private function scanCodepoint(string $byte) : string
     {
         $bytes = $this->byteIterator;
         $codepoint = $byte;
@@ -351,7 +357,18 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             $expect--;
         }
 
-        return $codepoint;
+        $chr = \IntlChar::chr($codepoint);
+
+        if ($chr === null) {
+            throw new ParseException(
+                sprintf(
+                    "Line %d: Ill-formed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
+                    $this->getLineNumber(), ...array_map("ord", str_split($codepoint))
+                )
+            );
+        }
+
+        return $chr;
     }
 
     private function getExceptionMessage(string $byte = null) : string
@@ -363,27 +380,19 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             );
         }
 
-        $codepoint = $this->fillCodepoint($byte);
-        $ord = \IntlChar::ord($codepoint);
-
-        if ($ord === null) {
-            return sprintf(
-                "Line %d: Malformed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
-                $this->getLineNumber(), ...array_map("ord", str_split($codepoint))
-            );
-        }
+        $codepoint = $this->scanCodepoint($byte);
 
         if (\IntlChar::isprint($codepoint)) {
             return sprintf(
                 "Line %d: Unexpected '%s'.",
                 $this->getLineNumber(), $codepoint
             );
+        } else {
+            return sprintf(
+                "Line %d: Unexpected control character \\u{%X}.",
+                $this->getLineNumber(), \IntlChar::ord($codepoint)
+            );
         }
-
-        return sprintf(
-            "Line %d: Unexpected control character \\u{%X}.",
-            $this->getLineNumber(), $ord
-        );
     }
 
     private function initByteIterator()

@@ -103,6 +103,14 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 Tokenizer::T_STRING, "\0"
             ],
             [
+                '"\u2028"',
+                Tokenizer::T_STRING, "\u{2028}"
+            ],
+            [
+                '"\u2029"',
+                Tokenizer::T_STRING, "\u{2029}"
+            ],
+            [
                 '"\uD83D\uDC18"',
                 Tokenizer::T_STRING, "\u{1F418}"
             ],
@@ -213,6 +221,34 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 "Line 1: Unexpected control character \\u{1E}."
             ],
             [
+                "\"\n\"",
+                "Line 1: Unexpected control character \\u{A}."
+            ],
+            [
+                "\"\r\"",
+                "Line 1: Unexpected control character \\u{D}."
+            ],
+            [
+                "\"\xC0\xAF\"",
+                "Line 1: Ill-formed UTF-8 sequence 0xC0 0xAF."
+            ],
+            [
+                "\"\xE0\x9F\x80\"",
+                "Line 1: Ill-formed UTF-8 sequence 0xE0 0x9F 0x80."
+            ],
+            [
+                "\"\xED\xA0\x80\"",
+                "Line 1: Ill-formed UTF-8 sequence 0xED 0xA0 0x80."
+            ],
+            [
+                "\"\xF0\x8F\x80\x80\"",
+                "Line 1: Ill-formed UTF-8 sequence 0xF0 0x8F 0x80 0x80."
+            ],
+            [
+                "\"\xF4\xA0\x80\x80\"",
+                "Line 1: Ill-formed UTF-8 sequence 0xF4 0xA0 0x80 0x80."
+            ],
+            [
                 "\x7f",
                 "Line 1: Unexpected control character \\u{7F}."
             ],
@@ -230,11 +266,11 @@ class LexerTest extends \PHPUnit_Framework_TestCase
             ],
             [
                 "\xC0\x80",
-                "Line 1: Malformed UTF-8 sequence 0xC0 0x80."
+                "Line 1: Ill-formed UTF-8 sequence 0xC0 0x80."
             ],
             [
                 "\xE0\x00",
-                "Line 1: Malformed UTF-8 sequence 0xE0."
+                "Line 1: Ill-formed UTF-8 sequence 0xE0."
             ]
         ];
     }

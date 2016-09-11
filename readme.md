@@ -36,7 +36,7 @@ composer require pcrov/jsonreader
 JsonReader's api and behavior is very much like [XMLReader](http://php.net/xmlreader). If you've worked with that then
 this will feel familiar.
 
-Note: this parser assumes UTF-8 encoded JSON but does not strictly enforce it.
+Note: Only UTF-8 encoded JSON is supported.
 
 ---
 
