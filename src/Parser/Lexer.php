@@ -270,8 +270,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             $buffer .= $this->scanDigits();
         }
 
-        // Automatically cast to int or float, as appropriate.
-        return +$buffer;
+        return $buffer;
     }
 
     /**

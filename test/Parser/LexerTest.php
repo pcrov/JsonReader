@@ -116,19 +116,19 @@ class LexerTest extends \PHPUnit_Framework_TestCase
             ],
             [
                 '42',
-                Tokenizer::T_NUMBER, 42
+                Tokenizer::T_NUMBER, '42'
             ],
             [
                 '-0.8',
-                Tokenizer::T_NUMBER, -0.8
+                Tokenizer::T_NUMBER, '-0.8'
             ],
             [
                 '42e5',
-                Tokenizer::T_NUMBER, 42e5
+                Tokenizer::T_NUMBER, '42e5'
             ],
             [
                 '42.8e-5',
-                Tokenizer::T_NUMBER, 42.8e-5
+                Tokenizer::T_NUMBER, '42.8e-5'
             ],
             [
                 'true',
