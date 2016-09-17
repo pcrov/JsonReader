@@ -6,10 +6,7 @@
 
 This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader), but for JSON.
 
-If you are not memory-limited you should be using [`json_decode()`](http://php.net/json_decode) as it is *significantly*
-faster than parsing with user-land PHP.
-
-It's when you are dealing with documents large enough that memory becomes an issue that you'll want a streaming
+When you are dealing with documents large enough that memory becomes an issue that you'll want a streaming
 parser - either a pull parser like this, or a SAX-style push parser. For a good overview of the difference between push
 and pull parsers see [*XML reader models: SAX versus XML pull parser*](http://www.firstobject.com/xml-reader-sax-vs-xml-pull-parser.htm) -
 the article focuses on XML but the same concepts apply.
@@ -60,8 +57,8 @@ $reader = new JsonReader();
 $reader->json($json);
 
 while ($reader->read()) {
-    if ($reader->getNodeType() === JsonReader::NUMBER) {
-        printf("%s: %d\n", $reader->getName(), $reader->getValue());
+    if ($reader->type() === JsonReader::NUMBER) {
+        printf("%s: %d\n", $reader->name(), $reader->value());
     }
 }
 $reader->close();
@@ -86,7 +83,7 @@ $reader = new JsonReader();
 $reader->open("data.json");
 
 while ($reader->read("type")) {
-    echo $reader->getValue(), "\n";
+    echo $reader->value(), "\n";
 }
 $reader->close();
 ```
@@ -115,58 +112,13 @@ class JsonReader
     const OBJECT = 7;
     const END_OBJECT = 8;
     
-    /**
-     * Close the parser.
-     *
-     * If a file handle was passed to JsonReader::open() it will not
-     * be closed by calling this method. That is left to the caller.
-     *
-     * @return void
-     */
-    public function close();
-
-    /**
-     * Depth of the node in the tree, starting at 0.
-     *
-     * @return int
-     */
-    public function getDepth() : int;
-
-    /**
-     * Name of the current node if any (for object properties).
-     *
-     * @return string|null
-     */
-    public function getName();
-
-    /**
-     * Type of the current node.
-     *
-     * @return int One of the JsonReader constants.
-     */
-    public function getNodeType() : int;
-
-    /**
-     * Value of the current node.
-     *
-     * For array and object nodes this will be evaluated on demand.
-     *
-     * Objects will be returned as arrays with strings for keys. Trying to
-     * return stdClass objects would gain nothing but exposure to edge cases
-     * where valid JSON produces property names that are not allowed in PHP
-     * objects (e.g. "" or "\u0000".) The behavior of json_decode() in these
-     * cases is inconsistent and can introduce key collisions, so we'll not be
-     * following its lead.
-     *
-     * @return mixed
-     */
-    public function getValue();
 
     /**
      * Initializes the reader with the given parser.
      *
-     * You do not need to call this if you're using one of the json() or open()
-     * methods.
+     * You do not need to call this if you're using one of json(), open(),
+     * or stream() methods. It's intended to be used with manual
+     * initialization of the parser, et al.
      *
      * @param \Traversable $parser
      * @return void
@@ -185,63 +137,104 @@ class JsonReader
     public function json(string $json);
 
     /**
-     * Move to the next node, skipping subtrees.
-     *
-     * If a name is given it will continue until a node of that name is
-     * reached.
-     *
-     * @param string|null $name
-     * @return bool
-     * @throws \pcrov\JsonReader\Exception
-     */
-    public function next(string $name = null) : bool;
-
-    /**
-     * Initializes the reader with the given file URI or handle.
+     * Initializes the reader with the given local or remote file URI.
      *
      * This convenience method handles creating the parser and relevant
      * dependencies.
-     *
-     * @param string|resource $file URI or file handle.
-     * @return void
-     * @throws InvalidArgumentException if a given resource is not a valid stream.
-     * @throws IOException if a given stream resource is not readable.
-     */
-    public function open($file);
-
-    /**
-     * Move to the next node.
-     *
-     * If a name is given it will continue until a node of that name is
-     * reached.
-     *
-     * @param string|null $name
-     * @return bool
-     * @throws \pcrov\JsonReader\Exception
-     */
-    public function read(string $name = null) : bool
-
-    /**
-     * Initializes the reader with the given file URI.
-     *
-     * This is identical to calling open() with a URI.
      *
      * @param string $uri URI.
      * @return void
      * @throws IOException if a given URI is not readable.
      */
-    public function setUri($uri);
+    public function open(string $uri);
 
     /**
-     * Initializes the reader with the given file handle.
+     * Initializes the reader with the given file stream resource.
      *
-     * This is identical to calling open() with a resource.
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
      *
-     * @param resource $handle Readable file handle.
+     * @param resource $stream Readable file stream resource.
      * @return void
      * @throws InvalidArgumentException if a given resource is not a valid stream.
      * @throws IOException if a given stream resource is not readable.
      */
-    public function setHandle($handle);
+    public function stream($stream);
+
+    /**
+     * Type of the current node.
+     *
+     * @return int One of the JsonReader constants.
+     */
+    public function type() : int;
+
+    /**
+     * Name of the current node if any (for object properties.)
+     *
+     * @return string|null
+     */
+    public function name();
+
+    /**
+     * Value of the current node.
+     *
+     * For array and object nodes this will be evaluated on demand.
+     *
+     * Objects will be returned as arrays with strings for keys. Trying to
+     * return stdClass objects would gain nothing but exposure to edge cases
+     * where valid JSON produces property names that are not allowed in PHP
+     * objects (e.g. "" or "\u0000".)
+     *
+     * Numbers will be returned as strings. The JSON specification places no
+     * limits on the range or precision of numbers, and returning them as
+     * strings allows you to handle them as you wish. For typical cases where
+     * you'd expect an integer or float an automatic cast like
+     * `$value = +$reader->value()` is sufficient, while in others you might
+     * want to use [BC Math](http://php.net/bcmath) or [GMP](http://php.net/gmp).
+     *
+     * @return mixed
+     */
+    public function value();
+
+    /**
+     * Depth of the current node in the tree, starting at 0.
+     *
+     * @return int
+     */
+    public function depth() : int;
+
+    /**
+     * Move to the next node, skipping subtrees.
+     *
+     * If a name is given it will continue until a node of that name is
+     * reached or the document ends.
+     *
+     * @param string|null $name
+     * @return bool
+     * @throws Exception
+     */
+    public function next(string $name = null) : bool;
+
+    /**
+     * Move to the next node.
+     *
+     * If a name is given it will continue until a node of that name is
+     * reached or the document ends.
+     *
+     * @param string|null $name
+     * @return bool
+     * @throws Exception
+     */
+    public function read(string $name = null) : bool;
+
+    /**
+     * Close the parser.
+     *
+     * A file handle passed to JsonReader::stream() will not be closed by
+     * calling this method. That is left to the caller.
+     *
+     * @return void
+     */
+    public function close();
 }
 ```

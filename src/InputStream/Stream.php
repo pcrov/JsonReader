@@ -16,19 +16,7 @@ final class Stream implements \IteratorAggregate
      */
     public function __construct($stream)
     {
-        if (
-            !is_resource($stream) ||
-            get_resource_type($stream) !== "stream" ||
-            stream_get_meta_data($stream)["stream_type"] === "dir"
-        ) {
-            throw new InvalidArgumentException("A valid stream resource must be provided.");
-        }
-
-        $mode = stream_get_meta_data($stream)["mode"];
-        if (!strpbrk($mode, "r+")) {
-            throw new IOException(sprintf("Stream must be readable. Given stream opened in mode: %s", $mode));
-        }
-
+        $this->validateStream($stream);
         $this->stream = $stream;
     }
 
@@ -41,6 +29,22 @@ final class Stream implements \IteratorAggregate
             if (@feof($stream)) {
                 break;
             }
+        }
+    }
+
+    private function validateStream($stream)
+    {
+        if (
+            !is_resource($stream) ||
+            get_resource_type($stream) !== "stream" ||
+            stream_get_meta_data($stream)["stream_type"] === "dir"
+        ) {
+            throw new InvalidArgumentException("A valid stream resource must be provided.");
+        }
+
+        $mode = stream_get_meta_data($stream)["mode"];
+        if (!strpbrk($mode, "r+")) {
+            throw new IOException(sprintf("Stream must be readable. Given stream opened in mode: %s", $mode));
         }
     }
 }

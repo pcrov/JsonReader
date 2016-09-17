@@ -49,34 +49,18 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         while ($reader->read());
     }
 
-    public function testOpenResource()
-    {
-        $reader = $this->reader;
-        $handle = fopen((__DIR__ . "/../composer.json"), "rb");
-        $reader->open($handle);
-        while ($reader->read());
-        fclose($handle);
-    }
-
-    public function testOpenUri()
+    public function testOpen()
     {
         $reader = $this->reader;
         $reader->open(__DIR__ . "/../composer.json");
         while ($reader->read());
     }
 
-    public function testSetUri()
-    {
-        $reader = $this->reader;
-        $reader->setUri(__DIR__ . "/../composer.json");
-        while ($reader->read());
-    }
-
-    public function testSetHandle()
+    public function testStream()
     {
         $reader = $this->reader;
         $handle = fopen((__DIR__ . "/../composer.json"), "rb");
-        $reader->setHandle($handle);
+        $reader->stream($handle);
         while ($reader->read());
         fclose($handle);
     }
@@ -96,20 +80,20 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
     public function testInitialState()
     {
         $reader = $this->reader;
-        $this->assertSame(0, $reader->getDepth());
-        $this->assertSame(0, $reader->getNodeType());
-        $this->assertNull($reader->getName());
-        $this->assertNull($reader->getValue());
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(0, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
     }
 
     public function testStateFollowingInit()
     {
         $reader = $this->reader;
         $reader->init($this->parser);
-        $this->assertSame(0, $reader->getDepth());
-        $this->assertSame(0, $reader->getNodeType());
-        $this->assertNull($reader->getName());
-        $this->assertNull($reader->getValue());
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(0, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
     }
 
     public function testRead()
@@ -151,10 +135,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
 
         $i = 0;
         while ($reader->read()) {
-            $this->assertSame($expected[$i][0], $reader->getNodeType());
-            $this->assertSame($expected[$i][1], $reader->getName());
-            $this->assertSame($expected[$i][2], $reader->getValue());
-            $this->assertSame($expected[$i][3], $reader->getDepth());
+            $this->assertSame($expected[$i][0], $reader->type());
+            $this->assertSame($expected[$i][1], $reader->name());
+            $this->assertSame($expected[$i][2], $reader->value());
+            $this->assertSame($expected[$i][3], $reader->depth());
             $i++;
         }
     }
@@ -174,10 +158,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
 
         $i = 0;
         while ($reader->read('number name')) {
-            $this->assertSame($expected[$i][0], $reader->getNodeType());
-            $this->assertSame($expected[$i][1], $reader->getName());
-            $this->assertSame($expected[$i][2], $reader->getValue());
-            $this->assertSame($expected[$i][3], $reader->getDepth());
+            $this->assertSame($expected[$i][0], $reader->type());
+            $this->assertSame($expected[$i][1], $reader->name());
+            $this->assertSame($expected[$i][2], $reader->value());
+            $this->assertSame($expected[$i][3], $reader->depth());
             $i++;
         }
     }
@@ -187,10 +171,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         $reader = $this->reader;
         $reader->init($this->parser);
         while ($reader->read());
-        $this->assertSame(0, $reader->getDepth());
-        $this->assertSame(0, $reader->getNodeType());
-        $this->assertNull($reader->getName());
-        $this->assertNull($reader->getValue());
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(0, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
     }
 
     public function testNext()
@@ -214,10 +198,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
 
         $i = 0;
         do {
-            $this->assertSame($expected[$i][0], $reader->getNodeType());
-            $this->assertSame($expected[$i][1], $reader->getName());
-            $this->assertSame($expected[$i][2], $reader->getValue());
-            $this->assertSame($expected[$i][3], $reader->getDepth());
+            $this->assertSame($expected[$i][0], $reader->type());
+            $this->assertSame($expected[$i][1], $reader->name());
+            $this->assertSame($expected[$i][2], $reader->value());
+            $this->assertSame($expected[$i][3], $reader->depth());
             $i++;
         } while ($reader->next());
     }
@@ -236,10 +220,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
 
         $i = 0;
         while ($reader->next('number name')) {
-            $this->assertSame($expected[$i][0], $reader->getNodeType());
-            $this->assertSame($expected[$i][1], $reader->getName());
-            $this->assertSame($expected[$i][2], $reader->getValue());
-            $this->assertSame($expected[$i][3], $reader->getDepth());
+            $this->assertSame($expected[$i][0], $reader->type());
+            $this->assertSame($expected[$i][1], $reader->name());
+            $this->assertSame($expected[$i][2], $reader->value());
+            $this->assertSame($expected[$i][3], $reader->depth());
             $i++;
         }
     }
@@ -252,10 +236,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         $reader->read('number name');
         $reader->next('number name');
 
-        $this->assertSame(JsonReader::NUMBER, $reader->getNodeType());
-        $this->assertSame('number name', $reader->getName());
-        $this->assertSame(44, $reader->getValue());
-        $this->assertSame(1, $reader->getDepth());
+        $this->assertSame(JsonReader::NUMBER, $reader->type());
+        $this->assertSame('number name', $reader->name());
+        $this->assertSame(44, $reader->value());
+        $this->assertSame(1, $reader->depth());
     }
 
     public function testStateFollowingNextCompletion()
@@ -263,10 +247,10 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         $reader = $this->reader;
         $reader->init($this->parser);
         while ($reader->next());
-        $this->assertSame(0, $reader->getDepth());
-        $this->assertSame(0, $reader->getNodeType());
-        $this->assertNull($reader->getName());
-        $this->assertNull($reader->getValue());
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(0, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
     }
 
 
@@ -277,9 +261,9 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         $reader->init($this->parser);
         $reader->read();
         $reader->close();
-        $this->assertSame(0, $reader->getDepth());
-        $this->assertSame(0, $reader->getNodeType());
-        $this->assertNull($reader->getName());
-        $this->assertNull($reader->getValue());
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(0, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
     }
 }

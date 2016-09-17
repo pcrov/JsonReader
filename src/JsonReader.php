@@ -40,7 +40,7 @@ class JsonReader
     /**
      * @var int
      */
-    private $nodeType = self::NONE;
+    private $type = self::NONE;
 
     /**
      * @var string|null
@@ -58,81 +58,10 @@ class JsonReader
     private $depth = 0;
 
     /**
-     * Close the parser.
-     *
-     * If a file handle was passed to JsonReader::open() it will not
-     * be closed by calling this method. That is left to the caller.
-     *
-     * @return void
-     */
-    public function close()
-    {
-        $this->resetNode();
-        $this->parser = null;
-    }
-
-    /**
-     * Depth of the node in the tree, starting at 0.
-     *
-     * @return int
-     */
-    public function getDepth() : int
-    {
-        return $this->depth;
-    }
-
-    /**
-     * Name of the current node if any (for object properties).
-     *
-     * @return string|null
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Type of the current node.
-     *
-     * @return int One of the JsonReader constants.
-     */
-    public function getNodeType() : int
-    {
-        return $this->nodeType;
-    }
-
-    /**
-     * Value of the current node.
-     *
-     * For array and object nodes this will be evaluated on demand.
-     *
-     * Objects will be returned as arrays with strings for keys. Trying to
-     * return stdClass objects would gain nothing but exposure to edge cases
-     * where valid JSON produces property names that are not allowed in PHP
-     * objects (e.g. "" or "\u0000".) The behavior of json_decode() in these
-     * cases is inconsistent and can introduce key collisions, so we'll not be
-     * following its lead.
-     *
-     * @return mixed
-     */
-    public function getValue()
-    {
-        $nodeType = $this->getNodeType();
-
-        if ($this->value === null && ($nodeType === self::ARRAY || $nodeType === self::OBJECT)) {
-            $this->value = $this->buildTree($nodeType);
-            $this->parser->push(new \ArrayIterator($this->parseCache));
-            $this->parseCache = [];
-        }
-
-        return $this->value;
-    }
-
-    /**
      * Initializes the reader with the given parser.
      *
      * You do not need to call this if you're using one of json(), open(),
-     * setUri(), or  setHandle() methods. It's intended to be used with manual
+     * or stream() methods. It's intended to be used with manual
      * initialization of the parser, et al.
      *
      * @param \Traversable $parser
@@ -141,10 +70,10 @@ class JsonReader
     public function init(\Traversable $parser)
     {
         $this->close();
-        $iterator = new IteratorStackIterator();
-        $iterator->push(new \IteratorIterator($parser));
-        $iterator->rewind();
-        $this->parser = $iterator;
+        $stack = new IteratorStackIterator();
+        $stack->push(new \IteratorIterator($parser));
+        $stack->rewind();
+        $this->parser = $stack;
     }
 
     /**
@@ -162,10 +91,103 @@ class JsonReader
     }
 
     /**
+     * Initializes the reader with the given local or remote file URI.
+     *
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
+     *
+     * @param string $uri URI.
+     * @return void
+     * @throws IOException if a given URI is not readable.
+     */
+    public function open(string $uri)
+    {
+        $this->init(new Parser(new Lexer(new Uri($uri))));
+    }
+
+    /**
+     * Initializes the reader with the given file stream resource.
+     *
+     * This convenience method handles creating the parser and relevant
+     * dependencies.
+     *
+     * @param resource $stream Readable file stream resource.
+     * @return void
+     * @throws InvalidArgumentException if a given resource is not a valid stream.
+     * @throws IOException if a given stream resource is not readable.
+     */
+    public function stream($stream)
+    {
+        $this->init(new Parser(new Lexer(new Stream($stream))));
+    }
+
+    /**
+     * Type of the current node.
+     *
+     * @return int One of the JsonReader constants.
+     */
+    public function type() : int
+    {
+        return $this->type;
+    }
+
+    /**
+     * Name of the current node if any (for object properties.)
+     *
+     * @return string|null
+     */
+    public function name()
+    {
+        return $this->name;
+    }
+
+    /**
+     * Value of the current node.
+     *
+     * For array and object nodes this will be evaluated on demand.
+     *
+     * Objects will be returned as arrays with strings for keys. Trying to
+     * return stdClass objects would gain nothing but exposure to edge cases
+     * where valid JSON produces property names that are not allowed in PHP
+     * objects (e.g. "" or "\u0000".)
+     *
+     * Numbers will be returned as strings. The JSON specification places no
+     * limits on the range or precision of numbers, and returning them as
+     * strings allows you to handle them as you wish. For typical cases where
+     * you'd expect an integer or float an automatic cast like
+     * `$value = +$reader->value()` is sufficient, while in others you might
+     * want to use [BC Math](http://php.net/bcmath) or [GMP](http://php.net/gmp).
+     *
+     * @return mixed
+     */
+    public function value()
+    {
+        $type = $this->type();
+
+        if ($this->value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
+            $this->value = $this->buildTree($type);
+            $this->parser->push(new \ArrayIterator($this->parseCache));
+            $this->parseCache = [];
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * Depth of the current node in the tree, starting at 0.
+     *
+     * @return int
+     */
+    public function depth() : int
+    {
+        return $this->depth;
+    }
+
+    /**
      * Move to the next node, skipping subtrees.
      *
      * If a name is given it will continue until a node of that name is
-     * reached.
+     * reached or the document ends.
      *
      * @param string|null $name
      * @return bool
@@ -173,15 +195,13 @@ class JsonReader
      */
     public function next(string $name = null) : bool
     {
-        $parser = $this->parser;
-
-        if ($parser === null) {
+        if ($this->parser === null) {
             throw new Exception("Load data before trying to read.");
         }
 
-        $depth = $this->getDepth();
+        $depth = $this->depth();
         while ($result = $this->read()) {
-            if ($this->getDepth() <= $depth) {
+            if ($this->depth() <= $depth) {
                 break;
             }
         }
@@ -198,26 +218,10 @@ class JsonReader
     }
 
     /**
-     * Initializes the reader with the given file URI or handle.
-     *
-     * This convenience method handles creating the parser and relevant
-     * dependencies.
-     *
-     * @param string|resource $file URI or file handle.
-     * @return void
-     * @throws InvalidArgumentException if a given resource is not a valid stream.
-     * @throws IOException if a given stream resource is not readable.
-     */
-    public function open($file)
-    {
-        \is_resource($file) ? $this->setHandle($file) : $this->setUri($file);
-    }
-
-    /**
      * Move to the next node.
      *
      * If a name is given it will continue until a node of that name is
-     * reached.
+     * reached or the document ends.
      *
      * @param string|null $name
      * @return bool
@@ -238,7 +242,7 @@ class JsonReader
 
         //@formatter:off silly ide
         list (
-            $this->nodeType,
+            $this->type,
             $this->name,
             $this->value,
             $this->depth
@@ -260,32 +264,17 @@ class JsonReader
     }
 
     /**
-     * Initializes the reader with the given file URI.
+     * Close the parser.
      *
-     * This is identical to calling open() with a URI.
+     * A file handle passed to JsonReader::stream() will not be closed by
+     * calling this method. That is left to the caller.
      *
-     * @param string $uri URI.
      * @return void
-     * @throws IOException if a given URI is not readable.
      */
-    public function setUri($uri)
+    public function close()
     {
-        $this->init(new Parser(new Lexer(new Uri($uri))));
-    }
-
-    /**
-     * Initializes the reader with the given file handle.
-     *
-     * This is identical to calling open() with a resource.
-     *
-     * @param resource $handle Readable file handle.
-     * @return void
-     * @throws InvalidArgumentException if a given resource is not a valid stream.
-     * @throws IOException if a given stream resource is not readable.
-     */
-    public function setHandle($handle)
-    {
-        $this->init(new Parser(new Lexer(new Stream($handle))));
+        $this->resetNode();
+        $this->parser = null;
     }
 
     /**
@@ -297,6 +286,7 @@ class JsonReader
     private function buildTree(int $type) : array
     {
         assert($type === self::ARRAY || $type === self::OBJECT);
+
         $parser = $this->parser;
         $end = ($type === self::ARRAY) ? self::END_ARRAY : self::END_OBJECT;
         $result = [];
@@ -332,7 +322,7 @@ class JsonReader
      */
     private function resetNode()
     {
-        $this->nodeType = self::NONE;
+        $this->type = self::NONE;
         $this->name = null;
         $this->value = null;
         $this->depth = 0;
