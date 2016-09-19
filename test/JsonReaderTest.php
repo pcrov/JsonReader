@@ -186,7 +186,6 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
             [JsonReader::BOOL, 'boolean false', false, 1],
             [JsonReader::NULL, 'null name', null, 1],
             [JsonReader::ARRAY, 'array name', [[], ['number name' => 43], []], 1],
-            [JsonReader::END_ARRAY, 'array name', null, 1],
             [JsonReader::NUMBER, 'number name', 44, 1],
             [JsonReader::END_OBJECT, null, null, 0],
         ];
@@ -252,8 +251,6 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
     }
-
-
 
     public function testClose()
     {

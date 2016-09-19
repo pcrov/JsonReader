@@ -200,15 +200,25 @@ class JsonReader
         }
 
         $depth = $this->depth();
+        $end = $this->getEndType($this->type());
+
         while ($result = $this->read()) {
             if ($this->depth() <= $depth) {
                 break;
             }
         }
 
+        // If we were on an object or array when called, we want to skip its end node.
+        if ($end !== self::NONE &&
+            $this->depth() === $depth &&
+            $this->type() === $end
+        ) {
+            $this->read();
+        }
+
         if ($name !== null) {
             do {
-                if ($this->name === $name) {
+                if ($this->name() === $name) {
                     break;
                 }
             } while ($result = $this->next());
@@ -254,7 +264,7 @@ class JsonReader
         $result = true;
         if ($name !== null) {
             do {
-                if ($this->name === $name) {
+                if ($this->name() === $name) {
                     break;
                 }
             } while ($result = $this->read());
@@ -288,7 +298,7 @@ class JsonReader
         assert($type === self::ARRAY || $type === self::OBJECT);
 
         $parser = $this->parser;
-        $end = ($type === self::ARRAY) ? self::END_ARRAY : self::END_OBJECT;
+        $end = $this->getEndType($type);
         $result = [];
 
         while (true) {
@@ -313,6 +323,22 @@ class JsonReader
         }
 
         return $result;
+    }
+
+    /**
+     * @param int $type One of the self:: node type constants
+     * @return int self::END_ARRAY, self::END_OBJECT, or self::NONE as appropriate
+     */
+    private function getEndType(int $type) : int
+    {
+        switch ($type) {
+            case self::ARRAY:
+                return self::END_ARRAY;
+            case self::OBJECT:
+                return self::END_OBJECT;
+            default:
+                return self::NONE;
+        }
     }
 
     /**
