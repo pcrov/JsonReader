@@ -213,7 +213,7 @@ class JsonReader
             $this->depth() === $depth &&
             $this->type() === $end
         ) {
-            $this->read();
+            $result = $this->read();
         }
 
         if ($name !== null) {
