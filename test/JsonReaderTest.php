@@ -205,6 +205,14 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         } while ($reader->next());
     }
 
+    public function testNextRootFalse()
+    {
+        $reader = $this->reader;
+        $reader->init($this->parser);
+        $reader->read();
+        $this->assertFalse($reader->next());
+    }
+
     public function testNextNameOver()
     {
         $expected = [
