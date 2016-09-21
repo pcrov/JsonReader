@@ -107,12 +107,24 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 Tokenizer::T_STRING, "\u{2028}"
             ],
             [
+                "\"\u{2028}\"",
+                Tokenizer::T_STRING, "\u{2028}"
+            ],
+            [
                 '"\u2029"',
+                Tokenizer::T_STRING, "\u{2029}"
+            ],
+            [
+                "\"\u{2029}\"",
                 Tokenizer::T_STRING, "\u{2029}"
             ],
             [
                 '"\uD83D\uDC18"',
                 Tokenizer::T_STRING, "\u{1F418}"
+            ],
+            [
+                "\"\x7f\"",
+                Tokenizer::T_STRING, "\x7f"
             ],
             [
                 '42',
@@ -250,7 +262,7 @@ class LexerTest extends \PHPUnit_Framework_TestCase
             ],
             [
                 "\x7f",
-                "Line 1: Unexpected control character \\u{7F}."
+                "Line 1: Unexpected non-printable character \\u{7F}."
             ],
             [
                 '"\uDC18"',

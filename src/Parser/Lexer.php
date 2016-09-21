@@ -178,16 +178,16 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                 return $buffer;
             }
 
-            $chr = $this->scanCodepoint($byte);
-
-            if (\IntlChar::iscntrl($chr)) {
+            if ($byte <= "\x1f") {
                 throw new ParseException(
                     sprintf(
                         "Line %d: Unexpected control character \\u{%X}.",
-                        $this->getLineNumber(), \IntlChar::ord($chr)
+                        $this->getLineNumber(), \ord($byte)
                     )
                 );
             }
+
+            $chr = $this->scanCodepoint($byte);
 
             if ($chr === "\\") {
                 $buffer .= $this->evaluateEscapeSequence();
@@ -388,7 +388,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             );
         } else {
             return sprintf(
-                "Line %d: Unexpected control character \\u{%X}.",
+                "Line %d: Unexpected non-printable character \\u{%X}.",
                 $this->getLineNumber(), \IntlChar::ord($codepoint)
             );
         }
