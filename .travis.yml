@@ -11,5 +11,13 @@ matrix:
   fast_finish: true
 
 before_script:
+  - phpenv config-rm xdebug.ini || echo "xdebug not available"
   - travis_retry composer self-update
   - travis_retry composer install --no-interaction
+
+script:
+  - phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
+
+after_success:
+  - travis_retry composer require satooshi/php-coveralls dev-master
+  - travis_retry php vendor/bin/coveralls -v
