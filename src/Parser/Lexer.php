@@ -332,14 +332,16 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         $codepoint = $byte;
         $ord = ord($codepoint);
 
-        if (!(($ord >> 5) ^ 0b110)) {
+        if (!($ord >> 7)) {
+            return $codepoint;
+        } elseif (!(($ord >> 5) ^ 0b110)) {
             $expect = 1;
         } elseif (!(($ord >> 4) ^ 0b1110)) {
             $expect = 2;
         } elseif (!(($ord >> 3) ^ 0b11110)) {
             $expect = 3;
         } else {
-            return $codepoint;
+            $expect = 0; // This'll throw in just a moment.
         }
 
         while ($bytes->valid() && $expect > 0) {

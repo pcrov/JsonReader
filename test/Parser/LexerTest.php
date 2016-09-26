@@ -241,6 +241,10 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 "Line 1: Unexpected control character \\u{D}."
             ],
             [
+                "\"\x81\"",
+                "Line 1: Ill-formed UTF-8 sequence 0x81."
+            ],
+            [
                 "\"\xC0\xAF\"",
                 "Line 1: Ill-formed UTF-8 sequence 0xC0 0xAF."
             ],
