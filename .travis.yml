@@ -4,16 +4,28 @@ php:
   - 7
   - 7.1
   - nightly
+  - hhvm
 
 matrix:
   allow_failures:
     - php: nightly
+    - php: hhvm
   fast_finish: true
 
-before_script:
+env:
+  - DEPS=lowest
+  - DEPS=highest
+
+before_install:
   - phpenv config-rm xdebug.ini || echo "xdebug not available"
-  - travis_retry composer self-update
-  - travis_retry composer install --no-interaction
+
+install:
+  - if [ "$DEPS" = "lowest" ]; then
+      travis_retry composer update --no-interaction --prefer-source --prefer-lowest;
+    else
+      travis_retry composer update --no-interaction --prefer-source;
+    fi;
+  - composer show
 
 script:
   - phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
@@ -21,3 +33,7 @@ script:
 after_success:
   - travis_retry composer require satooshi/php-coveralls dev-master
   - travis_retry php vendor/bin/coveralls -v
+
+cache:
+  directories:
+    - $HOME/.composer/cache
