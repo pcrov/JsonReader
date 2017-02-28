@@ -295,7 +295,7 @@ class JsonReader
      */
     private function buildTree(int $type) : array
     {
-        assert($type === self::ARRAY || $type === self::OBJECT);
+        \assert($type === self::ARRAY || $type === self::OBJECT);
 
         $parser = $this->parser;
         $end = $this->getEndType($type);

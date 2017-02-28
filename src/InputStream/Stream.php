@@ -24,9 +24,9 @@ final class Stream implements \IteratorAggregate
     {
         $stream = $this->stream;
 
-        while (($buffer = @fread($stream, 8192)) !== false) {
+        while (($buffer = @\fread($stream, 8192)) !== false) {
             yield from new StringInput($buffer);
-            if (@feof($stream)) {
+            if (@\feof($stream)) {
                 break;
             }
         }
@@ -35,16 +35,16 @@ final class Stream implements \IteratorAggregate
     private function validateStream($stream)
     {
         if (
-            !is_resource($stream) ||
-            get_resource_type($stream) !== "stream" ||
-            stream_get_meta_data($stream)["stream_type"] === "dir"
+            !\is_resource($stream) ||
+            \get_resource_type($stream) !== "stream" ||
+            \stream_get_meta_data($stream)["stream_type"] === "dir"
         ) {
             throw new InvalidArgumentException("A valid stream resource must be provided.");
         }
 
-        $mode = stream_get_meta_data($stream)["mode"];
-        if (!strpbrk($mode, "r+")) {
-            throw new IOException(sprintf("Stream must be readable. Given stream opened in mode: %s", $mode));
+        $mode = \stream_get_meta_data($stream)["mode"];
+        if (!\strpbrk($mode, "r+")) {
+            throw new IOException(\sprintf("Stream must be readable. Given stream opened in mode: %s", $mode));
         }
     }
 }

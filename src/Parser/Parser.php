@@ -85,13 +85,13 @@ final class Parser implements \IteratorAggregate
         $tokenizer = $this->tokenizer;
 
         if ($token === null) {
-            return sprintf(
+            return \sprintf(
                 "Line %d: Unexpected end of file.",
                 $tokenizer->getLineNumber()
             );
         }
 
-        return sprintf(
+        return \sprintf(
             "Line %d: Unexpected token %s.",
             $tokenizer->getLineNumber(),
             $token
@@ -108,7 +108,7 @@ final class Parser implements \IteratorAggregate
     private function parseArray() : \Generator
     {
         $tokens = $this->tokenIterator;
-        assert($tokens->key() === Tokenizer::T_BEGIN_ARRAY);
+        \assert($tokens->key() === Tokenizer::T_BEGIN_ARRAY);
 
         $name = $this->name;
         yield [JsonReader::ARRAY, $name, null, $this->depth];
@@ -137,7 +137,7 @@ final class Parser implements \IteratorAggregate
     private function parseObject() : \Generator
     {
         $tokens = $this->tokenIterator;
-        assert($tokens->key() === Tokenizer::T_BEGIN_OBJECT);
+        \assert($tokens->key() === Tokenizer::T_BEGIN_OBJECT);
 
         $name = $this->name;
         yield [JsonReader::OBJECT, $name, null, $this->depth];
@@ -166,7 +166,7 @@ final class Parser implements \IteratorAggregate
     private function parsePair() : \Generator
     {
         $tokens = $this->tokenIterator;
-        assert($tokens->key() === Tokenizer::T_STRING);
+        \assert($tokens->key() === Tokenizer::T_STRING);
 
         // name
         $this->name = $tokens->current();

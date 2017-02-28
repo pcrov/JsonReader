@@ -101,7 +101,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                     yield self::T_STRING => $this->evaluateDoubleQuotedString();
                     break;
                 default:
-                    if ($byte === "-" || ctype_digit($byte)) {
+                    if ($byte === "-" || \ctype_digit($byte)) {
                         yield self::T_NUMBER => $this->evaluateNumber($byte);
                     } else {
                         throw new ParseException($this->getExceptionMessage($byte));
@@ -125,7 +125,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     private function consumeLiteral(string $string)
     {
         $bytes = $this->byteIterator;
-        $length = strlen($string);
+        $length = \strlen($string);
 
         for ($i = 0; $i < $length; $i++) {
             $byte = $bytes->current();
@@ -180,9 +180,9 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
             if ($byte <= "\x1f") {
                 throw new ParseException(
-                    sprintf(
+                    \sprintf(
                         "Line %d: Unexpected control character \\u{%X}.",
-                        $this->getLineNumber(), ord($byte)
+                        $this->getLineNumber(), \ord($byte)
                     )
                 );
             }
@@ -213,7 +213,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      */
     private function evaluateNumber(string $byte)
     {
-        assert($byte === "-" || ctype_digit($byte));
+        \assert($byte === "-" || \ctype_digit($byte));
         $bytes = $this->byteIterator;
         $buffer = "";
 
@@ -225,7 +225,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
         if ($byte === "0") {
             $buffer .= $byte;
-        } elseif (ctype_digit($byte)) {
+        } elseif (\ctype_digit($byte)) {
             $buffer .= $byte . $this->scanDigits();
         } else {
             throw new ParseException($this->getExceptionMessage($byte));
@@ -242,7 +242,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             $bytes->next();
             $byte = $bytes->current();
             $bytes->next();
-            if (!ctype_digit($byte)) {
+            if (!\ctype_digit($byte)) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
             $buffer .= $byte . $this->scanDigits();
@@ -261,7 +261,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                 $byte = $bytes->current();
             }
 
-            if (!ctype_digit($byte)) {
+            if (!\ctype_digit($byte)) {
                 $bytes->next();
                 throw new ParseException($this->getExceptionMessage($byte));
             }
@@ -280,16 +280,16 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      */
     private function evaluateEscapedUnicodeSequence() : string
     {
-        $codepoint = (int)hexdec($this->scanEscapedUnicodeSequence());
+        $codepoint = (int)\hexdec($this->scanEscapedUnicodeSequence());
 
         switch (\IntlChar::getBlockCode($codepoint)) {
             case \IntlChar::BLOCK_CODE_HIGH_PRIVATE_USE_SURROGATES:
             case \IntlChar::BLOCK_CODE_HIGH_SURROGATES:
                 $this->consumeLiteral("\\u");
-                $lowSurrogate = (int)hexdec($this->scanEscapedUnicodeSequence());
+                $lowSurrogate = (int)\hexdec($this->scanEscapedUnicodeSequence());
 
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
-                    throw new ParseException(sprintf(
+                    throw new ParseException(\sprintf(
                             "Line %d: Expected UTF-16 low surrogate, got \\u%X.",
                             $this->getLineNumber(), $lowSurrogate)
                     );
@@ -299,7 +299,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                 break;
 
             case \IntlChar::BLOCK_CODE_LOW_SURROGATES:
-                throw new ParseException(sprintf(
+                throw new ParseException(\sprintf(
                         "Line %d: Unexpected UTF-16 low surrogate \\u%X.",
                         $this->getLineNumber(), $codepoint)
                 );
@@ -330,7 +330,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     {
         $bytes = $this->byteIterator;
         $codepoint = $byte;
-        $ord = ord($codepoint);
+        $ord = \ord($codepoint);
 
         if (!($ord >> 7)) {
             return $codepoint;
@@ -347,7 +347,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         while ($bytes->valid() && $expect > 0) {
             $byte = $bytes->current();
 
-            if ((ord($byte) >> 6) ^ 0b10) {
+            if ((\ord($byte) >> 6) ^ 0b10) {
                 break;
             }
 
@@ -360,9 +360,9 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
         if ($chr === null) {
             throw new ParseException(
-                sprintf(
-                    "Line %d: Ill-formed UTF-8 sequence" . str_repeat(" 0x%X", strlen($codepoint)) . ".",
-                    $this->getLineNumber(), ...array_map("ord", str_split($codepoint))
+                \sprintf(
+                    "Line %d: Ill-formed UTF-8 sequence" . \str_repeat(" 0x%X", \strlen($codepoint)) . ".",
+                    $this->getLineNumber(), ...\array_map("ord", \str_split($codepoint))
                 )
             );
         }
@@ -373,7 +373,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     private function getExceptionMessage(string $byte = null) : string
     {
         if ($byte === null) {
-            return sprintf(
+            return \sprintf(
                 "Line %d: Unexpected end of file.",
                 $this->getLineNumber()
             );
@@ -382,12 +382,12 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         $codepoint = $this->scanCodepoint($byte);
 
         if (\IntlChar::isprint($codepoint)) {
-            return sprintf(
+            return \sprintf(
                 "Line %d: Unexpected '%s'.",
                 $this->getLineNumber(), $codepoint
             );
         } else {
-            return sprintf(
+            return \sprintf(
                 "Line %d: Unexpected non-printable character \\u{%X}.",
                 $this->getLineNumber(), \IntlChar::ord($codepoint)
             );
@@ -406,7 +406,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         $bytes = $this->byteIterator;
         $digits = "";
 
-        while (ctype_digit($bytes->current())) {
+        while (\ctype_digit($bytes->current())) {
             $digits .= $bytes->current();
             $bytes->next();
         }
@@ -430,7 +430,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         for ($i = 0; $i < 4; $i++) {
             $byte = $bytes->current();
             $bytes->next();
-            if (!ctype_xdigit($byte)) {
+            if (!\ctype_xdigit($byte)) {
                 throw new ParseException($this->getExceptionMessage($byte));
             }
             $sequence .= $byte;
@@ -450,8 +450,8 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      */
     private function surrogatePairToCodepoint(int $high, int $low) : int
     {
-        assert($high >= 0xd800 && $high <= 0xdbff, "High surrogate out of range.");
-        assert($low >= 0xdc00 && $low <= 0xdfff, "Low surrogate out of range.");
+        \assert($high >= 0xd800 && $high <= 0xdbff, "High surrogate out of range.");
+        \assert($low >= 0xdc00 && $low <= 0xdfff, "Low surrogate out of range.");
 
         return 0x10000 + (($high & 0x03ff) << 10) + ($low & 0x03ff);
     }

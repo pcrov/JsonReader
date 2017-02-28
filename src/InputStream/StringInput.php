@@ -14,7 +14,7 @@ final class StringInput implements \IteratorAggregate
     public function getIterator() : \Generator
     {
         $string = $this->string;
-        $length = strlen($string);
+        $length = \strlen($string);
         for ($i = 0; $i < $length; $i++) {
             yield $string[$i];
         }
