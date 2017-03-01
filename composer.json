@@ -22,7 +22,7 @@
         "pcrov/iteratorstackiterator": "^1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^5.2"
+        "phpunit/phpunit": "^5.5"
     },
     "autoload": {
         "psr-4": {
