@@ -4,12 +4,10 @@ php:
   - 7
   - 7.1
   - nightly
-  - hhvm
 
 matrix:
   allow_failures:
     - php: nightly
-    - php: hhvm
   fast_finish: true
 
 env:
@@ -28,11 +26,7 @@ install:
   - composer show
 
 script:
-  - if [ "$TRAVIS_PHP_VERSION" = "hhvm" ]; then
-      hhvm vendor/bin/phpunit --coverage-text;
-    else
-      phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml;
-    fi;
+  - phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
 
 after_success:
   - travis_retry composer require satooshi/php-coveralls dev-master
