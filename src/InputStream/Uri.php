@@ -11,7 +11,7 @@ final class Uri implements \IteratorAggregate
         $this->uri = $uri;
     }
 
-    public function getIterator() : \Generator
+    public function getIterator(): \Generator
     {
         $handle = @\fopen($this->uri, "rb");
         if ($handle === false) {

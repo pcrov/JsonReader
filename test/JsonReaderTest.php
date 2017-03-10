@@ -35,7 +35,7 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
                 [JsonReader::END_OBJECT, null, null, 0],
             ];
 
-            public function getIterator() : \Generator
+            public function getIterator(): \Generator
             {
                 yield from $this->nodes;
             }

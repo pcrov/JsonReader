@@ -20,7 +20,7 @@ final class Stream implements \IteratorAggregate
         $this->stream = $stream;
     }
 
-    public function getIterator() : \Generator
+    public function getIterator(): \Generator
     {
         $stream = $this->stream;
 

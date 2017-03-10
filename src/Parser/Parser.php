@@ -56,7 +56,7 @@ final class Parser implements \IteratorAggregate
      * @return \Generator
      * @throws ParseException
      */
-    public function getIterator() : \Generator
+    public function getIterator(): \Generator
     {
         $this->initTokenizer();
         $this->name = null;
@@ -70,7 +70,7 @@ final class Parser implements \IteratorAggregate
         }
     }
 
-    private function consumeComma() : bool
+    private function consumeComma(): bool
     {
         $tokens = $this->tokenIterator;
         if ($tokens->key() === Tokenizer::T_COMMA) {
@@ -80,7 +80,7 @@ final class Parser implements \IteratorAggregate
         return false;
     }
 
-    private function getExceptionMessage(string $token = null) : string
+    private function getExceptionMessage(string $token = null): string
     {
         $tokenizer = $this->tokenizer;
 
@@ -105,7 +105,7 @@ final class Parser implements \IteratorAggregate
         $this->tokenIterator = $tokens;
     }
 
-    private function parseArray() : \Generator
+    private function parseArray(): \Generator
     {
         $tokens = $this->tokenIterator;
         \assert($tokens->key() === Tokenizer::T_BEGIN_ARRAY);
@@ -134,7 +134,7 @@ final class Parser implements \IteratorAggregate
         $tokens->next();
     }
 
-    private function parseObject() : \Generator
+    private function parseObject(): \Generator
     {
         $tokens = $this->tokenIterator;
         \assert($tokens->key() === Tokenizer::T_BEGIN_OBJECT);
@@ -163,7 +163,7 @@ final class Parser implements \IteratorAggregate
         $tokens->next();
     }
 
-    private function parsePair() : \Generator
+    private function parsePair(): \Generator
     {
         $tokens = $this->tokenIterator;
         \assert($tokens->key() === Tokenizer::T_STRING);
@@ -184,7 +184,7 @@ final class Parser implements \IteratorAggregate
         $this->name = null;
     }
 
-    private function parseValue() : \Generator
+    private function parseValue(): \Generator
     {
         $tokens = $this->tokenIterator;
 

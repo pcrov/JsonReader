@@ -45,7 +45,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * @return \Generator
      * @throws ParseException
      */
-    public function getIterator() : \Generator
+    public function getIterator(): \Generator
     {
         $this->initByteIterator();
         $bytes = $this->byteIterator;
@@ -110,7 +110,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         }
     }
 
-    public function getLineNumber() : int
+    public function getLineNumber(): int
     {
         return $this->line;
     }
@@ -136,7 +136,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         }
     }
 
-    private function evaluateEscapeSequence() : string
+    private function evaluateEscapeSequence(): string
     {
         $bytes = $this->byteIterator;
         $byte = $bytes->current();
@@ -165,7 +165,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
 
     }
 
-    private function evaluateDoubleQuotedString() : string
+    private function evaluateDoubleQuotedString(): string
     {
         $bytes = $this->byteIterator;
         $buffer = "";
@@ -278,7 +278,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * @return string The evaluated character.
      * @throws ParseException
      */
-    private function evaluateEscapedUnicodeSequence() : string
+    private function evaluateEscapedUnicodeSequence(): string
     {
         $codepoint = (int)\hexdec($this->scanEscapedUnicodeSequence());
 
@@ -326,7 +326,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * @return string The scanned codepoint.
      * @throws ParseException on ill-formed UTF-8.
      */
-    private function scanCodepoint(string $byte) : string
+    private function scanCodepoint(string $byte): string
     {
         $bytes = $this->byteIterator;
         $codepoint = $byte;
@@ -370,7 +370,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         return $chr;
     }
 
-    private function getExceptionMessage(string $byte = null) : string
+    private function getExceptionMessage(string $byte = null): string
     {
         if ($byte === null) {
             return \sprintf(
@@ -401,7 +401,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         $this->byteIterator = $bytes;
     }
 
-    private function scanDigits() : string
+    private function scanDigits(): string
     {
         $bytes = $this->byteIterator;
         $digits = "";
@@ -422,7 +422,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * @return string The scanned sequence.
      * @throws ParseException
      */
-    private function scanEscapedUnicodeSequence() : string
+    private function scanEscapedUnicodeSequence(): string
     {
         $bytes = $this->byteIterator;
         $sequence = "";
@@ -448,7 +448,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * @param int $low low surrogate
      * @return int codepoint
      */
-    private function surrogatePairToCodepoint(int $high, int $low) : int
+    private function surrogatePairToCodepoint(int $high, int $low): int
     {
         \assert($high >= 0xd800 && $high <= 0xdbff, "High surrogate out of range.");
         \assert($low >= 0xdc00 && $low <= 0xdfff, "Low surrogate out of range.");

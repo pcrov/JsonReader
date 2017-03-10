@@ -56,127 +56,158 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         return [
             [
                 '"foo"',
-                Tokenizer::T_STRING, "foo"
+                Tokenizer::T_STRING,
+                "foo"
             ],
             [
                 " \t \"foo\" \n",
-                Tokenizer::T_STRING, "foo"
+                Tokenizer::T_STRING,
+                "foo"
             ],
             [
                 '"\b"',
-                Tokenizer::T_STRING, "\x8"
+                Tokenizer::T_STRING,
+                "\x8"
             ],
             [
                 '"\""',
-                Tokenizer::T_STRING, '"'
+                Tokenizer::T_STRING,
+                '"'
             ],
             [
                 '"\\\\"',
-                Tokenizer::T_STRING, '\\'
+                Tokenizer::T_STRING,
+                '\\'
             ],
             [
                 '"\/"',
-                Tokenizer::T_STRING, '/'
+                Tokenizer::T_STRING,
+                '/'
             ],
             [
                 '"\n"',
-                Tokenizer::T_STRING, "\n"
+                Tokenizer::T_STRING,
+                "\n"
             ],
             [
                 '"\r"',
-                Tokenizer::T_STRING, "\r"
+                Tokenizer::T_STRING,
+                "\r"
             ],
             [
                 '"\f"',
-                Tokenizer::T_STRING, "\f"
+                Tokenizer::T_STRING,
+                "\f"
             ],
             [
                 '"\t"',
-                Tokenizer::T_STRING, "\t"
+                Tokenizer::T_STRING,
+                "\t"
             ],
             [
                 '"\u0061"',
-                Tokenizer::T_STRING, "a"
+                Tokenizer::T_STRING,
+                "a"
             ],
             [
                 '"\u0000"',
-                Tokenizer::T_STRING, "\0"
+                Tokenizer::T_STRING,
+                "\0"
             ],
             [
                 '"\u2028"',
-                Tokenizer::T_STRING, "\u{2028}"
+                Tokenizer::T_STRING,
+                "\u{2028}"
             ],
             [
                 "\"\u{2028}\"",
-                Tokenizer::T_STRING, "\u{2028}"
+                Tokenizer::T_STRING,
+                "\u{2028}"
             ],
             [
                 '"\u2029"',
-                Tokenizer::T_STRING, "\u{2029}"
+                Tokenizer::T_STRING,
+                "\u{2029}"
             ],
             [
                 "\"\u{2029}\"",
-                Tokenizer::T_STRING, "\u{2029}"
+                Tokenizer::T_STRING,
+                "\u{2029}"
             ],
             [
                 '"\uD83D\uDC18"',
-                Tokenizer::T_STRING, "\u{1F418}"
+                Tokenizer::T_STRING,
+                "\u{1F418}"
             ],
             [
                 "\"\x7f\"",
-                Tokenizer::T_STRING, "\x7f"
+                Tokenizer::T_STRING,
+                "\x7f"
             ],
             [
                 '42',
-                Tokenizer::T_NUMBER, '42'
+                Tokenizer::T_NUMBER,
+                '42'
             ],
             [
                 '-0.8',
-                Tokenizer::T_NUMBER, '-0.8'
+                Tokenizer::T_NUMBER,
+                '-0.8'
             ],
             [
                 '42e5',
-                Tokenizer::T_NUMBER, '42e5'
+                Tokenizer::T_NUMBER,
+                '42e5'
             ],
             [
                 '42.8e-5',
-                Tokenizer::T_NUMBER, '42.8e-5'
+                Tokenizer::T_NUMBER,
+                '42.8e-5'
             ],
             [
                 'true',
-                Tokenizer::T_TRUE, true
+                Tokenizer::T_TRUE,
+                true
             ],
             [
                 'false',
-                Tokenizer::T_FALSE, false
+                Tokenizer::T_FALSE,
+                false
             ],
             [
                 'null',
-                Tokenizer::T_NULL, null
+                Tokenizer::T_NULL,
+                null
             ],
             [
                 ':',
-                Tokenizer::T_COLON, null
+                Tokenizer::T_COLON,
+                null
             ],
             [
                 ',',
-                Tokenizer::T_COMMA, null
+                Tokenizer::T_COMMA,
+                null
             ],
             [
                 '[',
-                Tokenizer::T_BEGIN_ARRAY, null
+                Tokenizer::T_BEGIN_ARRAY,
+                null
             ],
             [
                 ']',
-                Tokenizer::T_END_ARRAY, null
+                Tokenizer::T_END_ARRAY,
+                null
             ],
             [
                 '{',
-                Tokenizer::T_BEGIN_OBJECT, null
+                Tokenizer::T_BEGIN_OBJECT,
+                null
             ],
             [
                 '}',
-                Tokenizer::T_END_OBJECT, null
+                Tokenizer::T_END_OBJECT,
+                null
             ]
         ];
     }
@@ -304,7 +335,7 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 $this->string = $string;
             }
 
-            public function getIterator() : \Generator
+            public function getIterator(): \Generator
             {
                 $string = $this->string;
                 $length = strlen($string);

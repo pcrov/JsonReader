@@ -19,5 +19,5 @@ interface Tokenizer extends \Traversable
     /**
      * @return int Current line number.
      */
-    public function getLineNumber() : int;
+    public function getLineNumber(): int;
 }

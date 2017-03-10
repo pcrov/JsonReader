@@ -232,14 +232,14 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                 $this->tokens = $tokens;
             }
 
-            public function getIterator() : \Generator
+            public function getIterator(): \Generator
             {
                 foreach ($this->tokens as $token) {
                     yield $token[0] => $token[1];
                 }
             }
 
-            public function getLineNumber() : int
+            public function getLineNumber(): int
             {
                 return 42;
             }

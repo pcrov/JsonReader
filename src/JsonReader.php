@@ -126,7 +126,7 @@ class JsonReader
      *
      * @return int One of the JsonReader constants.
      */
-    public function type() : int
+    public function type(): int
     {
         return $this->type;
     }
@@ -178,7 +178,7 @@ class JsonReader
      *
      * @return int
      */
-    public function depth() : int
+    public function depth(): int
     {
         return $this->depth;
     }
@@ -193,7 +193,7 @@ class JsonReader
      * @return bool
      * @throws Exception
      */
-    public function next(string $name = null) : bool
+    public function next(string $name = null): bool
     {
         if ($this->parser === null) {
             throw new Exception("Load data before trying to read.");
@@ -237,7 +237,7 @@ class JsonReader
      * @return bool
      * @throws Exception
      */
-    public function read(string $name = null) : bool
+    public function read(string $name = null): bool
     {
         $parser = $this->parser;
 
@@ -293,7 +293,7 @@ class JsonReader
      * @param int $type Must be self::ARRAY or self::OBJECT.
      * @return array
      */
-    private function buildTree(int $type) : array
+    private function buildTree(int $type): array
     {
         \assert($type === self::ARRAY || $type === self::OBJECT);
 
@@ -329,7 +329,7 @@ class JsonReader
      * @param int $type One of the self:: node type constants
      * @return int self::END_ARRAY, self::END_OBJECT, or self::NONE as appropriate
      */
-    private function getEndType(int $type) : int
+    private function getEndType(int $type): int
     {
         switch ($type) {
             case self::ARRAY:
