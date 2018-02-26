@@ -30,8 +30,8 @@ script:
   - phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
 
 after_success:
-  - travis_retry composer require satooshi/php-coveralls dev-master
-  - travis_retry php vendor/bin/coveralls -v
+  - travis_retry composer require php-coveralls/php-coveralls
+  - travis_retry php vendor/bin/php-coveralls -v
 
 cache:
   directories:
