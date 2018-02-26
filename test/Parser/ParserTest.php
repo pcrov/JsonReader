@@ -216,6 +216,68 @@ class ParserTest extends \PHPUnit_Framework_TestCase
                 ],
                 "Line 42: Unexpected token T_COLON."
             ],
+            [
+                [
+                    [Tokenizer::T_BEGIN_OBJECT, null],
+                    [Tokenizer::T_STRING, "name"],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_COMMA, null],
+                ],
+                "Line 42: Unexpected end of file."
+            ],
+            [
+                [
+                    [Tokenizer::T_BEGIN_OBJECT, null],
+                    [Tokenizer::T_STRING, "name"],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_COMMA, null],
+                    [Tokenizer::T_END_OBJECT, null],
+                ],
+                "Line 42: Unexpected token T_END_OBJECT."
+            ],
+            [
+                [
+                    [Tokenizer::T_BEGIN_OBJECT, null],
+                    [Tokenizer::T_STRING, "name"],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_COMMA, null],
+                    [Tokenizer::T_COMMA, null],
+                    [Tokenizer::T_END_OBJECT, null],
+                ],
+                "Line 42: Unexpected token T_COMMA."
+            ],
+            [
+                [
+                    [Tokenizer::T_BEGIN_OBJECT, null],
+                    [Tokenizer::T_STRING, "name"],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_COMMA, null],
+                    [Tokenizer::T_COMMA, null],
+                    [Tokenizer::T_STRING, "name"],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_END_OBJECT, null],
+                ],
+                "Line 42: Unexpected token T_COMMA."
+            ],
+            [
+                [
+                    [Tokenizer::T_BEGIN_OBJECT, null],
+                    [Tokenizer::T_STRING, "name"],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_COMMA, null],
+                    [Tokenizer::T_FALSE, false],
+                    [Tokenizer::T_COLON, null],
+                    [Tokenizer::T_STRING, "value"],
+                    [Tokenizer::T_END_OBJECT, null],
+                ],
+                "Line 42: Unexpected token T_FALSE."
+            ],
         ];
     }
 

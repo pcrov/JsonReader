@@ -166,9 +166,12 @@ final class Parser implements \IteratorAggregate
     private function parsePair(): \Generator
     {
         $tokens = $this->tokenIterator;
-        \assert($tokens->key() === Tokenizer::T_STRING);
 
         // name
+        $token = $tokens->key();
+        if ($token !== Tokenizer::T_STRING) {
+            throw new ParseException($this->getExceptionMessage($token));
+        }
         $this->name = $tokens->current();
         $tokens->next();
 
