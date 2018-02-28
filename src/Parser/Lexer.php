@@ -1,110 +1,97 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 namespace pcrov\JsonReader\Parser;
 
-/**
- * Class Lexer
- *
- * Does most scanning and evaluation in the same pass.
- *
- * @package JsonReader
- */
+use pcrov\JsonReader\InputStream\InputStream;
+
 final class Lexer implements \IteratorAggregate, Tokenizer
 {
-    /**
-     * @var \Traversable
-     */
-    private $bytestream;
+    private $inputStream;
+    private $buffer = "";
+    private $offset = 0;
+    private $line = 1;
 
-    /**
-     * @var \IteratorIterator Iterator of the $bytestream.
-     */
-    private $byteIterator;
-
-    /**
-     * @var int Current line number.
-     */
-    private $line;
-
-
-    /**
-     * Lexer constructor.
-     *
-     * @param \Traversable $bytestream Bytestream to lex. Each iteration should
-     *                                 provide a single byte.
-     */
-    public function __construct(\Traversable $bytestream)
+    public function __construct(InputStream $inputStream)
     {
-        $this->bytestream = $bytestream;
+        $this->inputStream = $inputStream;
     }
 
     /**
-     * Reads from the bytestream and generates a token stream in the form of
+     * Reads from the input stream and generates a token stream in the form of
      * token => value.
      *
-     * @return \Generator
      * @throws ParseException
      */
     public function getIterator(): \Generator
     {
-        $this->initByteIterator();
-        $bytes = $this->byteIterator;
-        $this->line = 1;
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
 
-        while ($bytes->valid()) {
-            $byte = $bytes->current();
-            $bytes->next();
-            switch ($byte) {
+        while (isset($buffer[$offset]) || $this->refillBuffer()) {
+            switch ($byte = $buffer[$offset]) {
                 case " ":
                 case "\t":
+                    $offset++;
                     break;
                 case "\n":
+                    $offset++;
                     $this->line++;
                     break;
                 case "\r":
+                    $offset++;
                     $this->line++;
-                    if ($bytes->current() === "\n") {
-                        $bytes->next();
+                    if (
+                        (isset($buffer[$offset]) || $this->refillBuffer())
+                        && $buffer[$offset] === "\n"
+                    ) {
+                        $offset++;
                     }
                     break;
                 case ":":
+                    $offset++;
                     yield self::T_COLON => null;
                     break;
                 case ",":
+                    $offset++;
                     yield self::T_COMMA => null;
                     break;
                 case "[":
+                    $offset++;
                     yield self::T_BEGIN_ARRAY => null;
                     break;
                 case "]":
+                    $offset++;
                     yield self::T_END_ARRAY => null;
                     break;
                 case "{":
+                    $offset++;
                     yield self::T_BEGIN_OBJECT => null;
                     break;
                 case "}":
+                    $offset++;
                     yield self::T_END_OBJECT => null;
                     break;
                 case "t":
-                    $this->consumeLiteral("rue");
+                    $this->consumeLiteral("true");
                     yield self::T_TRUE => true;
                     break;
                 case "f":
-                    $this->consumeLiteral("alse");
+                    $this->consumeLiteral("false");
                     yield self::T_FALSE => false;
                     break;
                 case "n":
-                    $this->consumeLiteral("ull");
+                    $this->consumeLiteral("null");
                     yield self::T_NULL => null;
                     break;
                 case '"':
+                    $offset++;
                     yield self::T_STRING => $this->evaluateDoubleQuotedString();
                     break;
                 default:
                     if ($byte === "-" || \ctype_digit($byte)) {
-                        yield self::T_NUMBER => $this->evaluateNumber($byte);
+                        yield self::T_NUMBER => $this->evaluateNumber();
                     } else {
-                        throw new ParseException($this->getExceptionMessage($byte));
+                        throw new ParseException($this->getExceptionMessage());
                     }
             }
         }
@@ -116,33 +103,51 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Consumes and discards bytes from the byte iterator exactly matching the
-     * given string.
-     *
-     * @param string $string
      * @throws ParseException
      */
     private function consumeLiteral(string $string)
     {
-        $bytes = $this->byteIterator;
-        $length = \strlen($string);
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
+        $consumeLength = \strlen($string);
+        $subject = \substr($buffer, $offset, $consumeLength);
 
-        for ($i = 0; $i < $length; $i++) {
-            $byte = $bytes->current();
-            $bytes->next();
-            if ($byte !== $string[$i]) {
-                throw new ParseException($this->getExceptionMessage($byte));
-            }
+        $diffPosition = \strspn($subject ^ $string, "\0");
+
+        // Match
+        if ($diffPosition === $consumeLength) {
+            $offset += $diffPosition;
+            return;
         }
+
+        $subjectLength = \strlen($subject);
+
+        // No match
+        if ($diffPosition !== $subjectLength) {
+            $offset += $diffPosition;
+            throw new ParseException($this->getExceptionMessage());
+        }
+
+        // Leading match at end of buffer
+        if (!$this->refillBuffer()) {
+            throw new ParseException($this->getExceptionMessage());
+        }
+        $this->consumeLiteral(\substr($string, $subjectLength));
     }
 
-    private function evaluateEscapeSequence(): string
+    /**
+     * @throws ParseException
+     */
+    private function evaluateEscapedSequence(): string
     {
-        $bytes = $this->byteIterator;
-        $byte = $bytes->current();
-        $bytes->next();
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
 
-        switch ($byte) {
+        if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+            throw new ParseException($this->getExceptionMessage());
+        }
+
+        switch ($byte = $buffer[$offset++]) {
             case '"':
             case "\\":
             case "/":
@@ -160,122 +165,156 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             case "u":
                 return $this->evaluateEscapedUnicodeSequence();
             default:
-                throw new ParseException($this->getExceptionMessage($byte));
+                $offset--;
+                throw new ParseException($this->getExceptionMessage());
         }
 
     }
 
+    /**
+     * @throws ParseException
+     */
     private function evaluateDoubleQuotedString(): string
     {
-        $bytes = $this->byteIterator;
-        $buffer = "";
+        static $invalidBytes = "\x0\x1\x2\x3\x4\x5\x6\x7\x8\x9\xA\xB\xC\xD\xE\xF\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
+        static $escapeChar = "\\";
+        static $endChar = '"';
 
-        while ($bytes->valid()) {
-            $byte = $bytes->current();
-            $bytes->next();
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
 
-            if ($byte === '"') {
-                return $buffer;
-            }
+        $string = $this->scanUntil($invalidBytes . $escapeChar . $endChar);
 
-            if ($byte <= "\x1f") {
+        while (
+            (isset($buffer[$offset]) || $this->refillBuffer())
+            && $buffer[$offset] !== $endChar
+        ) {
+            $currentByte = $buffer[$offset];
+
+            // Invalid
+            if ($currentByte <= "\x1f") {
                 throw new ParseException(
                     \sprintf(
                         "Line %d: Unexpected control character \\u{%X}.",
-                        $this->getLineNumber(), \ord($byte)
+                        $this->getLineNumber(), \ord($currentByte)
                     )
                 );
             }
 
-            if ($byte === "\\") {
-                $buffer .= $this->evaluateEscapeSequence();
-            } else {
-                $buffer .= $this->scanCodepoint($byte);
+            // Escape sequence
+            if ($currentByte === $escapeChar) {
+                $offset++;
+                $string .= $this->evaluateEscapedSequence();
+                continue;
             }
+
+            $string .= $this->scanUntil($invalidBytes . $escapeChar . $endChar);
         }
 
         // Unexpected end of file.
-        throw new ParseException($this->getExceptionMessage());
+        if (!isset($buffer[$offset])) {
+            throw new ParseException($this->getExceptionMessage());
+        }
+
+        // Invalid UTF-8
+        if (($invalidSequence = $this->getFirstInvalidUtf8ByteSequence($string)) !== null) {
+            throw new ParseException($this->getIllFormedUtf8ExceptionMessage($invalidSequence));
+        }
+
+        // End "
+        $offset++;
+        return $string;
     }
 
     /**
-     * Scans and evaluates the current number.
-     *
      * Numbers in JSON match the regex:
      *      -?(0|[1-9]\d*)(\.\d+)?([eE][-+]?\d+)?
      *
-     * Doing it byte by byte is less fun, but here we are.
-     *
-     * @param string $byte Initial byte. The bytestream cursor starts one
-     *                     position ahead of this.
-     * @return float|int
      * @throws ParseException
      */
-    private function evaluateNumber(string $byte)
+    private function evaluateNumber(): string
     {
-        \assert($byte === "-" || \ctype_digit($byte));
-        $bytes = $this->byteIterator;
-        $buffer = "";
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
+
+        $number = "";
+        $byte = $buffer[$offset];
 
         if ($byte === "-") {
-            $buffer .= $byte;
-            $byte = $bytes->current();
-            $bytes->next();
+            $offset++;
+            $number .= $byte;
+            if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+                throw new ParseException($this->getExceptionMessage());
+            }
         }
 
+        $byte = $buffer[$offset];
         if ($byte === "0") {
-            $buffer .= $byte;
+            $offset++;
+            $number .= $byte;
         } elseif (\ctype_digit($byte)) {
-            $buffer .= $byte . $this->scanDigits();
+            $number .= $this->scanDigits();
         } else {
-            throw new ParseException($this->getExceptionMessage($byte));
+            throw new ParseException($this->getExceptionMessage());
         }
 
-        // Catch up to the cursor. From here on we have to take care not to
-        // overshoot, else we risk losing the byte immediately following the
-        // number.
-        $byte = $bytes->current();
+        if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+            return $number;
+        }
 
         // Fractional part.
+        $byte = $buffer[$offset];
         if ($byte === ".") {
-            $buffer .= $byte;
-            $bytes->next();
-            $byte = $bytes->current();
-            $bytes->next();
-            if (!\ctype_digit($byte)) {
-                throw new ParseException($this->getExceptionMessage($byte));
+            $offset++;
+            $number .= $byte;
+            if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+                throw new ParseException($this->getExceptionMessage());
             }
-            $buffer .= $byte . $this->scanDigits();
-            $byte = $bytes->current();
+
+            $digits = $this->scanDigits();
+            if ($digits === "") {
+                throw new ParseException($this->getExceptionMessage());
+            }
+
+            $number .= $digits;
+
+            if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+                return $number;
+            }
         }
 
         // Exponent.
+        $byte = $buffer[$offset];
         if ($byte === "e" || $byte === "E") {
-            $buffer .= $byte;
-            $bytes->next();
-            $byte = $bytes->current();
+            $offset++;
+            $number .= $byte;
+            if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+                throw new ParseException($this->getExceptionMessage());
+            }
 
+            $byte = $buffer[$offset];
             if ($byte === "-" || $byte === "+") {
-                $buffer .= $byte;
-                $bytes->next();
-                $byte = $bytes->current();
+                $offset++;
+                $number .= $byte;
+                if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+                    throw new ParseException($this->getExceptionMessage());
+                }
             }
 
-            if (!\ctype_digit($byte)) {
-                $bytes->next();
-                throw new ParseException($this->getExceptionMessage($byte));
+            $digits = $this->scanDigits();
+            if ($digits === "") {
+                throw new ParseException($this->getExceptionMessage());
             }
-            $buffer .= $this->scanDigits();
+            $number .= $digits;
         }
 
-        return $buffer;
+        return $number;
     }
 
     /**
      * Evaluates the current escaped unicode sequence
      * (beginning after leading the \u).
      *
-     * @return string The evaluated character.
      * @throws ParseException
      */
     private function evaluateEscapedUnicodeSequence(): string
@@ -308,6 +347,18 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         return \IntlChar::chr($codepoint);
     }
 
+    private function refillBuffer(): bool
+    {
+        do {
+            $data = $this->inputStream->read();
+        } while ($data === "" && $data !== null);
+
+        $this->buffer = (string)$data;
+        $this->offset = 0;
+
+        return $data !== null;
+    }
+
     /**
      * Scans a single UTF-8 encoded Unicode codepoint, which can be up to four
      * bytes long.
@@ -321,15 +372,14 @@ final class Lexer implements \IteratorAggregate, Tokenizer
      * @see https://en.wikipedia.org/wiki/UTF-8#Description
      * @see http://www.unicode.org/versions/Unicode9.0.0/ch03.pdf#page=54
      *
-     * @param string $byte Initial byte. The bytestream cursor starts one
-     *                     position ahead of this.
-     * @return string The scanned codepoint.
      * @throws ParseException on ill-formed UTF-8.
      */
-    private function scanCodepoint(string $byte): string
+    private function scanCodepoint(): string
     {
-        $bytes = $this->byteIterator;
-        $codepoint = $byte;
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
+
+        $codepoint = $buffer[$offset++];
         $ord = \ord($codepoint);
 
         if (!($ord >> 7)) {
@@ -344,99 +394,152 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             $expect = 0; // This'll throw in just a moment.
         }
 
-        while ($bytes->valid() && $expect > 0) {
-            $byte = $bytes->current();
+        $continuationBytes = "";
+        do {
+            $temp = \substr($buffer, $offset, $expect);
+            $deltaLength = \strlen($temp);
+            $expect -= $deltaLength;
+            $continuationBytes .= $temp;
+        } while ($expect > 0 && $this->refillBuffer());
+
+        $offset += $deltaLength;
+
+        for (
+            $i = 0, $continuationBytesLength = \strlen($continuationBytes);
+            $i < $continuationBytesLength;
+            $i++
+        ) {
+            $byte = $continuationBytes[$i];
 
             if ((\ord($byte) >> 6) ^ 0b10) {
                 break;
             }
 
             $codepoint .= $byte;
-            $bytes->next();
-            $expect--;
         }
 
         $chr = \IntlChar::chr($codepoint);
 
         if ($chr === null) {
-            throw new ParseException(
-                \sprintf(
-                    "Line %d: Ill-formed UTF-8 sequence" . \str_repeat(" 0x%X", \strlen($codepoint)) . ".",
-                    $this->getLineNumber(), ...\array_map("ord", \str_split($codepoint))
-                )
-            );
+            throw new ParseException($this->getIllFormedUtf8ExceptionMessage($codepoint));
         }
 
         return $chr;
     }
 
-    private function getExceptionMessage(string $byte = null): string
+    /**
+     * @throws ParseException
+     */
+    private function getExceptionMessage(): string
     {
-        if ($byte === null) {
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
+
+        if (!isset($buffer[$offset])) {
             return \sprintf(
                 "Line %d: Unexpected end of file.",
                 $this->getLineNumber()
             );
         }
 
-        $codepoint = $this->scanCodepoint($byte);
+        $codepoint = $this->scanCodepoint();
 
         if (\IntlChar::isprint($codepoint)) {
             return \sprintf(
                 "Line %d: Unexpected '%s'.",
                 $this->getLineNumber(), $codepoint
             );
-        } else {
-            return \sprintf(
-                "Line %d: Unexpected non-printable character \\u{%X}.",
-                $this->getLineNumber(), \IntlChar::ord($codepoint)
-            );
         }
+
+        return \sprintf(
+            "Line %d: Unexpected non-printable character \\u{%X}.",
+            $this->getLineNumber(), \IntlChar::ord($codepoint)
+        );
     }
 
-    private function initByteIterator()
+    private function getIllFormedUtf8ExceptionMessage(string $string)
     {
-        $bytes = new \IteratorIterator($this->bytestream);
-        $bytes->rewind();
-        $this->byteIterator = $bytes;
+        return \sprintf(
+            "Line %d: Ill-formed UTF-8 sequence" . \str_repeat(" 0x%X", \strlen($string)) . ".",
+            $this->getLineNumber(), ...\unpack("C*", $string)
+        );
     }
 
     private function scanDigits(): string
     {
-        $bytes = $this->byteIterator;
-        $digits = "";
+        static $digits = "0123456789";
 
-        while (\ctype_digit($bytes->current())) {
-            $digits .= $bytes->current();
-            $bytes->next();
-        }
-
-        return $digits;
+        return $this->scanWhile($digits);
     }
 
     /**
-     * Scans the current escaped unicode sequence, sans leading \u.
+     * Scans four hexadecimal characters.
      *
-     * An escaped unicode sequence is a string of four hexadecimal characters.
-     *
-     * @return string The scanned sequence.
      * @throws ParseException
      */
     private function scanEscapedUnicodeSequence(): string
     {
-        $bytes = $this->byteIterator;
-        $sequence = "";
+        static $hexChars = "0123456789ABCDEFabcdef";
+        static $length = 4;
 
-        for ($i = 0; $i < 4; $i++) {
-            $byte = $bytes->current();
-            $bytes->next();
-            if (!\ctype_xdigit($byte)) {
-                throw new ParseException($this->getExceptionMessage($byte));
-            }
-            $sequence .= $byte;
+        $sequence = $this->scanWhile($hexChars, $length);
+
+        if (\strlen($sequence) < $length) {
+            throw new ParseException($this->getExceptionMessage());
         }
 
         return $sequence;
+    }
+
+    private function scanUntil(string $mask): string
+    {
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
+
+        if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+            return "";
+        }
+
+        $matchedLength = \strcspn($buffer, $mask, $offset);
+        $matchedBytes = \substr($buffer, $offset, $matchedLength);
+        $offset += $matchedLength;
+
+        // Complete match
+        if (isset($buffer[$offset]) || !$this->refillBuffer()) {
+            return $matchedBytes;
+        }
+
+        // Possibly more to come
+        return $matchedBytes . $this->scanUntil($mask);
+    }
+
+    private function scanWhile(string $mask, int $maxLength = null): string
+    {
+        \assert($maxLength >= 0, "maxLength cannot be negative");
+
+        $buffer = &$this->buffer;
+        $offset = &$this->offset;
+
+        if (!isset($buffer[$offset]) && !$this->refillBuffer()) {
+            return "";
+        }
+
+        if ($maxLength === null) {
+            $matchedLength = \strspn($buffer, $mask, $offset);
+        } else {
+            $matchedLength = \strspn($buffer, $mask, $offset, $maxLength);
+        }
+        $matchedBytes = \substr($buffer, $offset, $matchedLength);
+        $offset += $matchedLength;
+
+        // Complete match
+        if ($matchedLength === $maxLength || isset($buffer[$offset]) || !$this->refillBuffer()) {
+            return $matchedBytes;
+        }
+
+        // Possibly more to come
+        $needed = $maxLength === null ? null : $maxLength - $matchedLength;
+        return $matchedBytes . $this->scanWhile($mask, $needed);
     }
 
     /**
@@ -454,5 +557,83 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         \assert($low >= 0xdc00 && $low <= 0xdfff, "Low surrogate out of range.");
 
         return 0x10000 + (($high & 0x03ff) << 10) + ($low & 0x03ff);
+    }
+
+    private function validateUtf8(string $string): bool
+    {
+        return (bool)\preg_match('//u', $string);
+    }
+
+    private function findInvalidUtf8Position(string $string): int
+    {
+        // Faster expressions are possible but this is safe from backtracking
+        // limits and such on very long strings.
+        static $regex = <<<'REGEX'
+            /
+            (?(DEFINE)
+                (?<valid>
+                    [\x00-\x7F]                            |  # U+0000..U+007F
+                    [\xC2-\xDF] [\x80-\xBF]                |  # U+0080..U+07FF
+                    \xE0        [\xA0-\xBF] [\x80-\xBF]    |  # U+0800..U+0FFF
+                    [\xE1-\xEC] [\x80-\xBF]{2}             |  # U+1000..U+CFFF
+                    \xED        [\x80-\x9F] [\x80-\xBF]    |  # U+D000..U+D7FF
+                    [\xEE-\xEF] [\x80-\xBF]{2}             |  # U+E000..U+FFFF
+                    \xF0        [\x90-\xBF] [\x80-\xBF]{2} |  # U+10000..U+3FFFF
+                    [\xF1-\xF3] [\x80-\xBF]{3}             |  # U+40000..U+FFFFF
+                    \xF4        [\x80-\x8F] [\x80-\xBF]{2} |  # U+100000..U+10FFFF
+                    \Z
+                )
+            )
+            \A(?!(?&valid)) |
+            (?&valid)(?!(?&valid))
+            /x
+REGEX;
+
+        $valid = !\preg_match($regex, $string, $matches, \PREG_OFFSET_CAPTURE);
+        \assert(!$valid, "Only invalid UTF-8 strings should be passed into this function.");
+
+        return \strlen($matches[0][0]) + $matches[0][1];
+    }
+
+    /**
+     * @return string|null The invalid byte sequence or null if the string is valid UTF-8
+     */
+    private function getFirstInvalidUtf8ByteSequence(string $string)
+    {
+        if ($this->validateUtf8($string)) {
+            return null;
+        }
+
+        $position = $this->findInvalidUtf8Position($string);
+        $sequence = $string[$position];
+
+        $ord = \ord($sequence);
+        if (!(($ord >> 5) ^ 0b110)) {
+            $expect = 1;
+        } elseif (!(($ord >> 4) ^ 0b1110)) {
+            $expect = 2;
+        } elseif (!(($ord >> 3) ^ 0b11110)) {
+            $expect = 3;
+        } else {
+            return $sequence;
+        }
+
+        $continuationBytes = (string)\substr($string, $position + 1, $expect);
+
+        for (
+            $i = 0, $continuationBytesLength = \strlen($continuationBytes);
+            $i < $continuationBytesLength;
+            $i++
+        ) {
+            $byte = $continuationBytes[$i];
+
+            if ((\ord($byte) >> 6) ^ 0b10) {
+                break;
+            }
+
+            $sequence .= $byte;
+        }
+
+        return $sequence;
     }
 }

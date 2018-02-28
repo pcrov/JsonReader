@@ -10,8 +10,13 @@ class StreamTest extends \PHPUnit_Framework_TestCase
     {
         $string = file_get_contents(__FILE__);
         $handle = fopen(__FILE__, "rb");
-        $streamInput = new Stream($handle);
-        $this->assertSame(str_split($string), iterator_to_array($streamInput));
+        $stream = new Stream($handle);
+
+        $buffer = "";
+        while (($data = $stream->read()) !== null) {
+            $buffer .= $data;
+        }
+        $this->assertSame($string, $buffer);
         fclose($handle);
     }
 

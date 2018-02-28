@@ -8,7 +8,12 @@ class UriTest extends \PHPUnit_Framework_TestCase
     {
         $string = file_get_contents(__FILE__);
         $uriInput = new Uri(__FILE__);
-        $this->assertSame(str_split($string), iterator_to_array($uriInput));
+
+        $buffer = "";
+        while (($data = $uriInput->read()) !== null) {
+            $buffer .= $data;
+        }
+        $this->assertSame($string, $buffer);
     }
 
     public function testUriInputIOFailure()

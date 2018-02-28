@@ -1,4 +1,4 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 namespace pcrov\JsonReader;
 
@@ -10,10 +10,6 @@ use pcrov\JsonReader\InputStream\StringInput;
 use pcrov\JsonReader\Parser\Parser;
 use pcrov\JsonReader\Parser\Lexer;
 
-/**
- * Class JsonReader
- * @package JsonReader
- */
 class JsonReader
 {
     /* Node types */
@@ -99,6 +95,7 @@ class JsonReader
      * @param string $uri URI.
      * @return void
      * @throws IOException if a given URI is not readable.
+     * @throws InvalidArgumentException
      */
     public function open(string $uri)
     {

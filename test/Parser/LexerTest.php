@@ -2,17 +2,31 @@
 
 namespace pcrov\JsonReader\Parser;
 
+use pcrov\JsonReader\InputStream\InputStream;
+
 class LexerTest extends \PHPUnit_Framework_TestCase
 {
-
-    /** @var \IteratorAggregate */
-    protected $bytestream;
-
     public function testGetLineNumber()
     {
-        $bytestream = $this->bytestream;
-        $bytestream->setString(":\n:\r:\r\n:\r\n:");
-        $lexer = new Lexer($bytestream);
+        $inputStream = $this->getInputStream();
+        $inputStream->setString(":\n:\r:\r\n:\r\n:");
+        $lexer = new Lexer($inputStream);
+        $iterator = new \IteratorIterator($lexer);
+        $iterator->rewind();
+        $this->assertTrue($iterator->valid());
+
+        $line = 1;
+        foreach ($iterator as $_) {
+            $this->assertSame($line, $lexer->getLineNumber());
+            $line++;
+        }
+    }
+
+    public function testGetLineNumberWithSmallBuffer()
+    {
+        $inputStream = $this->getInputStreamWithSmallBuffer();
+        $inputStream->setString(":\n:\r:\r\n:\r\n:");
+        $lexer = new Lexer($inputStream);
         $iterator = new \IteratorIterator($lexer);
         $iterator->rewind();
         $this->assertTrue($iterator->valid());
@@ -27,9 +41,24 @@ class LexerTest extends \PHPUnit_Framework_TestCase
     /** @dataProvider provideTestTokenization */
     public function testTokenization($input, $expectedToken, $expectedValue)
     {
-        $bytestream = $this->bytestream;
-        $bytestream->setString($input);
-        $lexer = new \IteratorIterator(new Lexer($bytestream));
+        $inputStream = $this->getInputStream();
+        $inputStream->setString($input);
+        $lexer = new \IteratorIterator(new Lexer($inputStream));
+        $lexer->rewind();
+        $this->assertTrue($lexer->valid());
+
+        foreach ($lexer as $key => $value) {
+            $this->assertSame($expectedToken, $key);
+            $this->assertSame($expectedValue, $value);
+        }
+    }
+
+    /** @dataProvider provideTestTokenization */
+    public function testTokenizationWithSmallBuffer($input, $expectedToken, $expectedValue)
+    {
+        $inputStream = $this->getInputStreamWithSmallBuffer();
+        $inputStream->setString($input);
+        $lexer = new \IteratorIterator(new Lexer($inputStream));
         $lexer->rewind();
         $this->assertTrue($lexer->valid());
 
@@ -45,10 +74,26 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         $this->expectException(ParseException::class);
         $this->expectExceptionMessage($expectedMessage);
 
-        $bytestream = $this->bytestream;
-        $bytestream->setString($input);
-        $lexer = new \IteratorIterator(new Lexer($bytestream));
-        foreach ($lexer as $_);
+        $inputStream = $this->getInputStream();
+        $inputStream->setString($input);
+        $lexer = new \IteratorIterator(new Lexer($inputStream));
+        foreach ($lexer as $_) {
+            // no-op
+        }
+    }
+
+    /** @dataProvider provideTestLexerError */
+    public function testLexerErrorWithSmallBuffer($input, $expectedMessage)
+    {
+        $this->expectException(ParseException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        $inputStream = $this->getInputStreamWithSmallBuffer();
+        $inputStream->setString($input);
+        $lexer = new \IteratorIterator(new Lexer($inputStream));
+        foreach ($lexer as $_) {
+            // no-op
+        }
     }
 
     public function provideTestTokenization()
@@ -296,6 +341,10 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 "Line 1: Ill-formed UTF-8 sequence 0xF4 0xA0 0x80 0x80."
             ],
             [
+                "\"\xFF\"",
+                "Line 1: Ill-formed UTF-8 sequence 0xFF."
+            ],
+            [
                 "\x7f",
                 "Line 1: Unexpected non-printable character \\u{7F}."
             ],
@@ -322,12 +371,10 @@ class LexerTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    protected function setUp()
+    private function getInputStream(): InputStream
     {
-        $this->bytestream = new class() implements \IteratorAggregate
+        return new class() implements InputStream
         {
-
-            /** @var string */
             private $string = "";
 
             public function setString(string $string)
@@ -335,13 +382,40 @@ class LexerTest extends \PHPUnit_Framework_TestCase
                 $this->string = $string;
             }
 
-            public function getIterator(): \Generator
+            public function read()
             {
                 $string = $this->string;
-                $length = strlen($string);
-                for ($i = 0; $i < $length; $i++) {
-                    yield $string[$i];
+                if ($string === "") {
+                    return null;
                 }
+                $this->string = "";
+
+                return $string;
+            }
+        };
+    }
+
+    private function getInputStreamWithSmallBuffer(): InputStream
+    {
+        return new class() implements InputStream
+        {
+            private $chunks = [];
+
+            public function setString(string $string)
+            {
+                $this->chunks = \str_split($string);
+            }
+
+            public function read()
+            {
+                $chunks = &$this->chunks;
+
+                if (($current = \current($chunks)) === false) {
+                    return null;
+                }
+                next($chunks);
+
+                return $current;
             }
         };
     }

@@ -1,8 +1,8 @@
-<?php declare(strict_types = 1);
+<?php declare(strict_types=1);
 
 namespace pcrov\JsonReader\InputStream;
 
-final class StringInput implements \IteratorAggregate
+final class StringInput implements InputStream
 {
     private $string;
 
@@ -11,12 +11,14 @@ final class StringInput implements \IteratorAggregate
         $this->string = $string;
     }
 
-    public function getIterator(): \Generator
+    public function read()
     {
         $string = $this->string;
-        $length = \strlen($string);
-        for ($i = 0; $i < $length; $i++) {
-            yield $string[$i];
+        if ($string === "") {
+            return null;
         }
+        $this->string = "";
+
+        return $string;
     }
 }
