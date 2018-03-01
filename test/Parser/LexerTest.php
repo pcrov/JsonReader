@@ -3,8 +3,9 @@
 namespace pcrov\JsonReader\Parser;
 
 use pcrov\JsonReader\InputStream\InputStream;
+use PHPUnit\Framework\TestCase;
 
-class LexerTest extends \PHPUnit_Framework_TestCase
+class LexerTest extends TestCase
 {
     public function testGetLineNumber()
     {

@@ -3,8 +3,9 @@
 namespace pcrov\JsonReader\InputStream;
 
 use pcrov\JsonReader\InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
-class StreamTest extends \PHPUnit_Framework_TestCase
+class StreamTest extends TestCase
 {
     public function testStreamInput()
     {

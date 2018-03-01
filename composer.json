@@ -23,7 +23,7 @@
         "pcrov/unicode": "^0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^5.5"
+        "phpunit/phpunit": "^6.5"
     },
     "autoload": {
         "psr-4": {

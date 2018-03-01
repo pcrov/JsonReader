@@ -3,8 +3,9 @@
 namespace pcrov\JsonReader\Parser;
 
 use pcrov\JsonReader\JsonReader;
+use PHPUnit\Framework\TestCase;
 
-class ParserTest extends \PHPUnit_Framework_TestCase
+class ParserTest extends TestCase
 {
 
     /** @var Tokenizer */

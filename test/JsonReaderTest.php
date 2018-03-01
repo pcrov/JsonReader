@@ -2,7 +2,9 @@
 
 namespace pcrov\JsonReader;
 
-class JsonReaderTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class JsonReaderTest extends TestCase
 {
     /** @var JsonReader */
     protected $reader;
@@ -42,6 +44,7 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         };
     }
 
+    /** @doesNotPerformAssertions */
     public function testJson()
     {
         $reader = $this->reader;
@@ -49,6 +52,7 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         while ($reader->read());
     }
 
+    /** @doesNotPerformAssertions */
     public function testOpen()
     {
         $reader = $this->reader;
@@ -56,6 +60,7 @@ class JsonReaderTest extends \PHPUnit_Framework_TestCase
         while ($reader->read());
     }
 
+    /** @doesNotPerformAssertions */
     public function testStream()
     {
         $reader = $this->reader;

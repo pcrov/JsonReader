@@ -2,7 +2,9 @@
 
 namespace pcrov\JsonReader\InputStream;
 
-class StringInputTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class StringInputTest extends TestCase
 {
     public function testStringInput()
     {

@@ -2,7 +2,9 @@
 
 namespace pcrov\JsonReader\InputStream;
 
-class UriTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class UriTest extends TestCase
 {
     public function testUriInput()
     {
