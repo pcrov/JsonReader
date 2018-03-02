@@ -7,50 +7,15 @@ use PHPUnit\Framework\TestCase;
 
 class LexerTest extends TestCase
 {
-    public function testGetLineNumber()
-    {
-        $inputStream = $this->getInputStream();
-        $inputStream->setString(":\n:\r:\r\n:\r\n:");
-        $lexer = new Lexer($inputStream);
-        $iterator = new \IteratorIterator($lexer);
-        $iterator->rewind();
-        $this->assertTrue($iterator->valid());
-
-        $line = 1;
-        foreach ($iterator as $_) {
-            $this->assertSame($line, $lexer->getLineNumber());
-            $line++;
-        }
-    }
-
-    public function testGetLineNumberWithSmallBuffer()
-    {
-        $inputStream = $this->getInputStreamWithSmallBuffer();
-        $inputStream->setString(":\n:\r:\r\n:\r\n:");
-        $lexer = new Lexer($inputStream);
-        $iterator = new \IteratorIterator($lexer);
-        $iterator->rewind();
-        $this->assertTrue($iterator->valid());
-
-        $line = 1;
-        foreach ($iterator as $_) {
-            $this->assertSame($line, $lexer->getLineNumber());
-            $line++;
-        }
-    }
-
     /** @dataProvider provideTestTokenization */
     public function testTokenization($input, $expectedToken)
     {
         $inputStream = $this->getInputStream();
         $inputStream->setString($input);
-        $lexer = new \IteratorIterator(new Lexer($inputStream));
-        $lexer->rewind();
-        $this->assertTrue($lexer->valid());
+        $lexer = new Lexer($inputStream);
 
-        foreach ($lexer as $token) {
-            $this->assertEquals($expectedToken, $token);
-        }
+        $token = $lexer->read();
+        $this->assertEquals($expectedToken, $token);
     }
 
     /** @dataProvider provideTestTokenization */
@@ -58,13 +23,10 @@ class LexerTest extends TestCase
     {
         $inputStream = $this->getInputStreamWithSmallBuffer();
         $inputStream->setString($input);
-        $lexer = new \IteratorIterator(new Lexer($inputStream));
-        $lexer->rewind();
-        $this->assertTrue($lexer->valid());
+        $lexer = new Lexer($inputStream);
 
-        foreach ($lexer as $token) {
-            $this->assertEquals($expectedToken, $token);
-        }
+        $token = $lexer->read();
+        $this->assertEquals($expectedToken, $token);
     }
 
     /** @dataProvider provideTestLexerError */
@@ -75,10 +37,11 @@ class LexerTest extends TestCase
 
         $inputStream = $this->getInputStream();
         $inputStream->setString($input);
-        $lexer = new \IteratorIterator(new Lexer($inputStream));
-        foreach ($lexer as $_) {
-            // no-op
-        }
+        $lexer = new Lexer($inputStream);
+
+        do {
+            $token = $lexer->read();
+        } while ($token->getType() !== Token::T_EOF);
     }
 
     /** @dataProvider provideTestLexerError */
@@ -89,15 +52,20 @@ class LexerTest extends TestCase
 
         $inputStream = $this->getInputStreamWithSmallBuffer();
         $inputStream->setString($input);
-        $lexer = new \IteratorIterator(new Lexer($inputStream));
-        foreach ($lexer as $_) {
-            // no-op
-        }
+        $lexer = new Lexer($inputStream);
+
+        do {
+            $token = $lexer->read();
+        } while ($token->getType() !== Token::T_EOF);
     }
 
     public function provideTestTokenization()
     {
         return [
+            "variety of line breaks" => [
+                "\n\r\r\n\r\n",
+                new Token(Token::T_EOF, null, 5)
+            ],
             "simple string" => [
                 '"foo"',
                 new Token(Token::T_STRING, "foo", 1)

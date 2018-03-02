@@ -6,7 +6,7 @@ use pcrov\JsonReader\InputStream\InputStream;
 use function pcrov\Unicode\surrogate_pair_to_code_point;
 use function pcrov\Unicode\utf8_get_invalid_byte_sequence;
 
-final class Lexer implements \IteratorAggregate, Tokenizer
+final class Lexer implements Tokenizer
 {
     private $inputStream;
     private $buffer = "";
@@ -19,12 +19,9 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     }
 
     /**
-     * Reads from the input stream and generates a token stream in the form of
-     * token => value.
-     *
      * @throws ParseException
      */
-    public function getIterator(): \Generator
+    public function read(): Token
     {
         $buffer = &$this->buffer;
         $offset = &$this->offset;
@@ -52,57 +49,43 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                     break;
                 case ":":
                     $offset++;
-                    yield new Token(Token::T_COLON, null, $line);
-                    break;
+                    return new Token(Token::T_COLON, null, $line);
                 case ",":
                     $offset++;
-                    yield new Token(Token::T_COMMA, null, $line);
-                    break;
+                    return new Token(Token::T_COMMA, null, $line);
                 case "[":
                     $offset++;
-                    yield new Token(Token::T_BEGIN_ARRAY, null, $line);
-                    break;
+                    return new Token(Token::T_BEGIN_ARRAY, null, $line);
                 case "]":
                     $offset++;
-                    yield new Token(Token::T_END_ARRAY, null, $line);
-                    break;
+                    return new Token(Token::T_END_ARRAY, null, $line);
                 case "{":
                     $offset++;
-                    yield new Token(Token::T_BEGIN_OBJECT, null, $line);
-                    break;
+                    return new Token(Token::T_BEGIN_OBJECT, null, $line);
                 case "}":
                     $offset++;
-                    yield new Token(Token::T_END_OBJECT, null, $line);
-                    break;
+                    return new Token(Token::T_END_OBJECT, null, $line);
                 case "t":
                     $this->consumeLiteral("true");
-                    yield new Token(Token::T_TRUE, true, $line);
-                    break;
+                    return new Token(Token::T_TRUE, true, $line);
                 case "f":
                     $this->consumeLiteral("false");
-                    yield new Token(Token::T_FALSE, false, $line);
-                    break;
+                    return new Token(Token::T_FALSE, false, $line);
                 case "n":
                     $this->consumeLiteral("null");
-                    yield new Token(Token::T_NULL, null, $line);
-                    break;
+                    return new Token(Token::T_NULL, null, $line);
                 case '"':
                     $offset++;
-                    yield new Token(Token::T_STRING, $this->evaluateDoubleQuotedString(), $line);
-                    break;
+                    return new Token(Token::T_STRING, $this->evaluateDoubleQuotedString(), $line);
                 default:
                     if ($byte === "-" || \ctype_digit($byte)) {
-                        yield new Token(Token::T_NUMBER, $this->evaluateNumber(), $line);
-                    } else {
-                        throw new ParseException($this->getExceptionMessage());
+                        return new Token(Token::T_NUMBER, $this->evaluateNumber(), $line);
                     }
+                    throw new ParseException($this->getExceptionMessage());
             }
         }
-    }
 
-    public function getLineNumber(): int
-    {
-        return $this->line;
+        return new Token(Token::T_EOF, null, $line);
     }
 
     /**
@@ -199,7 +182,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                 throw new ParseException(
                     \sprintf(
                         "Line %d: Unexpected control character \\u{%X}.",
-                        $this->getLineNumber(), \ord($currentByte)
+                        $this->line, \ord($currentByte)
                     )
                 );
             }
@@ -333,7 +316,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                 if (\IntlChar::getBlockCode($lowSurrogate) !== \IntlChar::BLOCK_CODE_LOW_SURROGATES) {
                     throw new ParseException(\sprintf(
                             "Line %d: Expected UTF-16 low surrogate, got \\u%X.",
-                            $this->getLineNumber(), $lowSurrogate)
+                            $this->line, $lowSurrogate)
                     );
                 }
 
@@ -343,7 +326,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
             case \IntlChar::BLOCK_CODE_LOW_SURROGATES:
                 throw new ParseException(\sprintf(
                         "Line %d: Unexpected UTF-16 low surrogate \\u%X.",
-                        $this->getLineNumber(), $codepoint)
+                        $this->line, $codepoint)
                 );
         }
 
@@ -437,11 +420,12 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     {
         $buffer = &$this->buffer;
         $offset = &$this->offset;
+        $line = &$this->line;
 
         if (!isset($buffer[$offset])) {
             return \sprintf(
                 "Line %d: Unexpected end of file.",
-                $this->getLineNumber()
+                $line
             );
         }
 
@@ -450,13 +434,13 @@ final class Lexer implements \IteratorAggregate, Tokenizer
         if (\IntlChar::isprint($codepoint)) {
             return \sprintf(
                 "Line %d: Unexpected '%s'.",
-                $this->getLineNumber(), $codepoint
+                $line, $codepoint
             );
         }
 
         return \sprintf(
             "Line %d: Unexpected non-printable character \\u{%X}.",
-            $this->getLineNumber(), \IntlChar::ord($codepoint)
+            $line, \IntlChar::ord($codepoint)
         );
     }
 
@@ -464,7 +448,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     {
         return \sprintf(
             "Line %d: Ill-formed UTF-8 sequence" . \str_repeat(" 0x%X", \strlen($string)) . ".",
-            $this->getLineNumber(), ...\unpack("C*", $string)
+            $this->line, ...\unpack("C*", $string)
         );
     }
 

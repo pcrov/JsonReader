@@ -15,6 +15,7 @@ final class Token
     const T_END_ARRAY = "T_END_ARRAY";
     const T_BEGIN_OBJECT = "T_BEGIN_OBJECT";
     const T_END_OBJECT = "T_END_OBJECT";
+    const T_EOF = "T_EOF";
 
     private $type;
     private $value;

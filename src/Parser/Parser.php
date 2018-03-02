@@ -10,26 +10,21 @@ final class Parser implements \IteratorAggregate
      * @var array Map of tokens to node types.
      */
     private $tokenTypeMap = [
-        Tokenizer::T_STRING => JsonReader::STRING,
-        Tokenizer::T_NUMBER => JsonReader::NUMBER,
-        Tokenizer::T_TRUE => JsonReader::BOOL,
-        Tokenizer::T_FALSE => JsonReader::BOOL,
-        Tokenizer::T_NULL => JsonReader::NULL,
-        Tokenizer::T_BEGIN_ARRAY => JsonReader::ARRAY,
-        Tokenizer::T_END_ARRAY => JsonReader::END_ARRAY,
-        Tokenizer::T_BEGIN_OBJECT => JsonReader::OBJECT,
-        Tokenizer::T_END_OBJECT => JsonReader::END_OBJECT
+        Token::T_STRING => JsonReader::STRING,
+        Token::T_NUMBER => JsonReader::NUMBER,
+        Token::T_TRUE => JsonReader::BOOL,
+        Token::T_FALSE => JsonReader::BOOL,
+        Token::T_NULL => JsonReader::NULL,
+        Token::T_BEGIN_ARRAY => JsonReader::ARRAY,
+        Token::T_END_ARRAY => JsonReader::END_ARRAY,
+        Token::T_BEGIN_OBJECT => JsonReader::OBJECT,
+        Token::T_END_OBJECT => JsonReader::END_OBJECT
     ];
 
     /**
      * @var Tokenizer
      */
     private $tokenizer;
-
-    /**
-     * @var \IteratorIterator Iterator of $tokenizer.
-     */
-    private $tokenIterator;
 
     /**
      * @var int
@@ -58,153 +53,151 @@ final class Parser implements \IteratorAggregate
      */
     public function getIterator(): \Generator
     {
-        $this->initTokenizer();
         $this->name = null;
         $this->depth = 0;
-        $tokens = $this->tokenIterator;
-
-        yield from $this->parseValue();
-
-        if ($tokens->valid()) {
-            throw new ParseException($this->getExceptionMessage($tokens->key()));
-        }
-    }
-
-    private function consumeComma(): bool
-    {
-        $tokens = $this->tokenIterator;
-        if ($tokens->key() === Tokenizer::T_COMMA) {
-            $tokens->next();
-            return true;
-        }
-        return false;
-    }
-
-    private function getExceptionMessage(string $token = null): string
-    {
         $tokenizer = $this->tokenizer;
 
-        if ($token === null) {
+        yield from $this->parseValue($tokenizer->read());
+
+        $token = $tokenizer->read();
+        if ($token->getType() !== Token::T_EOF) {
+            throw new ParseException($this->getExceptionMessage($token));
+        }
+    }
+
+    private function getExceptionMessage(Token $token): string
+    {
+        if ($token->getType() === Token::T_EOF) {
             return \sprintf(
                 "Line %d: Unexpected end of file.",
-                $tokenizer->getLineNumber()
+                $token->getLine()
             );
         }
 
         return \sprintf(
             "Line %d: Unexpected token %s.",
-            $tokenizer->getLineNumber(),
-            $token
+            $token->getLine(),
+            $token->getType()
         );
     }
 
-    private function initTokenizer()
-    {
-        $tokens = new \IteratorIterator($this->tokenizer);
-        $tokens->rewind();
-        $this->tokenIterator = $tokens;
-    }
-
+    /**
+     * @throws ParseException
+     */
     private function parseArray(): \Generator
     {
-        $tokens = $this->tokenIterator;
-        \assert($tokens->key() === Tokenizer::T_BEGIN_ARRAY);
+        $tokenizer = $this->tokenizer;
+        $depth = &$this->depth;
 
         $name = $this->name;
-        yield [JsonReader::ARRAY, $name, null, $this->depth];
+        yield [JsonReader::ARRAY, $name, null, $depth];
 
         $this->name = null;
-        $this->depth++;
-        $tokens->next();
-        $token = $tokens->key();
+        $depth++;
+        $token = $tokenizer->read();
+        $tokenType = $token->getType();
 
-        if ($token !== Tokenizer::T_END_ARRAY) {
-            do {
-                yield from $this->parseValue();
-            } while ($this->consumeComma());
-            $token = $tokens->key();
+        if ($tokenType !== Token::T_END_ARRAY) {
+            yield from $this->parseValue($token);
+            $token = $tokenizer->read();
+            $tokenType = $token->getType();
+
+            while ($tokenType === Token::T_COMMA) {
+                yield from $this->parseValue($tokenizer->read());
+                $token = $tokenizer->read();
+                $tokenType = $token->getType();
+            }
         }
 
-        if ($token !== Tokenizer::T_END_ARRAY) {
+        if ($tokenType !== Token::T_END_ARRAY) {
             throw new ParseException($this->getExceptionMessage($token));
         }
 
-        $this->depth--;
-        yield [JsonReader::END_ARRAY, $name, null, $this->depth];
-        $tokens->next();
+        $depth--;
+        yield [JsonReader::END_ARRAY, $name, null, $depth];
     }
 
+    /**
+     * @throws ParseException
+     */
     private function parseObject(): \Generator
     {
-        $tokens = $this->tokenIterator;
-        \assert($tokens->key() === Tokenizer::T_BEGIN_OBJECT);
+        $tokenizer = $this->tokenizer;
+        $depth = &$this->depth;
 
         $name = $this->name;
         yield [JsonReader::OBJECT, $name, null, $this->depth];
 
-        $this->depth++;
-        $tokens->next();
-        $token = $tokens->key();
+        $depth++;
+        $token = $tokenizer->read();
+        $tokenType = $token->getType();
 
         // name:value property pairs
-        if ($token === Tokenizer::T_STRING) {
-            do {
-                yield from $this->parsePair();
-            } while ($this->consumeComma());
-            $token = $tokens->key();
+        if ($tokenType === Token::T_STRING) {
+            yield from $this->parsePair($token);
+            $token = $tokenizer->read();
+            $tokenType = $token->getType();
+
+            while ($tokenType === Token::T_COMMA) {
+                yield from $this->parsePair($tokenizer->read());
+                $token = $tokenizer->read();
+                $tokenType = $token->getType();
+            }
         }
 
-        if ($token !== Tokenizer::T_END_OBJECT) {
+        if ($tokenType !== Token::T_END_OBJECT) {
             throw new ParseException($this->getExceptionMessage($token));
         }
 
         $this->depth--;
         yield [JsonReader::END_OBJECT, $name, null, $this->depth];
-        $tokens->next();
     }
 
-    private function parsePair(): \Generator
+    /**
+     * @throws ParseException
+     */
+    private function parsePair(Token $token): \Generator
     {
-        $tokens = $this->tokenIterator;
+        $tokenizer = $this->tokenizer;
 
         // name
-        $token = $tokens->key();
-        if ($token !== Tokenizer::T_STRING) {
+        $tokenType = $token->getType();
+        if ($tokenType !== Token::T_STRING) {
             throw new ParseException($this->getExceptionMessage($token));
         }
-        $this->name = $tokens->current();
-        $tokens->next();
+        $this->name = $token->getValue();
 
+        $token = $tokenizer->read();
+        $tokenType = $token->getType();
         // :
-        $token = $tokens->key();
-        if ($token !== Tokenizer::T_COLON) {
+        if ($tokenType !== Token::T_COLON) {
             throw new ParseException($this->getExceptionMessage($token));
         }
-        $tokens->next();
 
         // value
-        yield from $this->parseValue();
+        yield from $this->parseValue($tokenizer->read());
         $this->name = null;
     }
 
-    private function parseValue(): \Generator
+    /**
+     * @throws ParseException
+     */
+    private function parseValue(Token $token): \Generator
     {
-        $tokens = $this->tokenIterator;
+        $tokenType = $token->getType();
 
-        $token = $tokens->key();
-        switch ($token) {
-            case Tokenizer::T_STRING:
-            case Tokenizer::T_NUMBER:
-            case Tokenizer::T_TRUE:
-            case Tokenizer::T_FALSE:
-            case Tokenizer::T_NULL:
-                yield [$this->tokenTypeMap[$token], $this->name, $tokens->current(), $this->depth];
-                $tokens->next();
+        switch ($tokenType) {
+            case Token::T_STRING:
+            case Token::T_NUMBER:
+            case Token::T_TRUE:
+            case Token::T_FALSE:
+            case Token::T_NULL:
+                yield [$this->tokenTypeMap[$tokenType], $this->name, $token->getValue(), $this->depth];
                 break;
-            case Tokenizer::T_BEGIN_ARRAY:
+            case Token::T_BEGIN_ARRAY:
                 yield from $this->parseArray();
                 break;
-            case Tokenizer::T_BEGIN_OBJECT:
+            case Token::T_BEGIN_OBJECT:
                 yield from $this->parseObject();
                 break;
             default:
