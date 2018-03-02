@@ -21,7 +21,7 @@ final class Token
     private $value;
     private $line;
 
-    public function __construct(string $type, $value, int $line)
+    public function __construct(string $type, int $line, $value = null)
     {
         $this->type = $type;
         $this->value = $value;

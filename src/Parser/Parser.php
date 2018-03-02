@@ -42,11 +42,11 @@ final class Parser implements \IteratorAggregate
     }
 
     /**
-     * Reads from the token stream, generates a data stream in the form of:
+     * Generates tuples in the form of:
      *  [$type, $name, $value, $depth]
      *
      * Objects and arrays will have a value of null. The consumer should use a
-     * tree builder to flesh these out as desired.
+     * tree builder to flesh these if desired.
      *
      * @return \Generator
      * @throws ParseException
@@ -67,17 +67,20 @@ final class Parser implements \IteratorAggregate
 
     private function getExceptionMessage(Token $token): string
     {
-        if ($token->getType() === Token::T_EOF) {
+        $tokenType = $token->getType();
+        $tokenLine = $token->getLine();
+
+        if ($tokenType === Token::T_EOF) {
             return \sprintf(
                 "Line %d: Unexpected end of file.",
-                $token->getLine()
+                $tokenLine
             );
         }
 
         return \sprintf(
             "Line %d: Unexpected token %s.",
-            $token->getLine(),
-            $token->getType()
+            $tokenLine,
+            $tokenType
         );
     }
 
@@ -126,7 +129,7 @@ final class Parser implements \IteratorAggregate
         $depth = &$this->depth;
 
         $name = $this->name;
-        yield [JsonReader::OBJECT, $name, null, $this->depth];
+        yield [JsonReader::OBJECT, $name, null, $depth];
 
         $depth++;
         $token = $tokenizer->read();
@@ -149,8 +152,8 @@ final class Parser implements \IteratorAggregate
             throw new ParseException($this->getExceptionMessage($token));
         }
 
-        $this->depth--;
-        yield [JsonReader::END_OBJECT, $name, null, $this->depth];
+        $depth--;
+        yield [JsonReader::END_OBJECT, $name, null, $depth];
     }
 
     /**

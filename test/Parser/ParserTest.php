@@ -298,11 +298,11 @@ class ParserTest extends TestCase
                 $tokens = &$this->tokens;
 
                 if (($current = \current($tokens)) === false) {
-                    return new Token(Token::T_EOF, null, 42);
+                    return new Token(Token::T_EOF, 42);
                 }
                 next($tokens);
 
-                return new Token($current[0], $current[1], 42);
+                return new Token($current[0], 42, $current[1]);
             }
         };
     }

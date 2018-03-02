@@ -49,43 +49,43 @@ final class Lexer implements Tokenizer
                     break;
                 case ":":
                     $offset++;
-                    return new Token(Token::T_COLON, null, $line);
+                    return new Token(Token::T_COLON, $line);
                 case ",":
                     $offset++;
-                    return new Token(Token::T_COMMA, null, $line);
+                    return new Token(Token::T_COMMA, $line);
                 case "[":
                     $offset++;
-                    return new Token(Token::T_BEGIN_ARRAY, null, $line);
+                    return new Token(Token::T_BEGIN_ARRAY, $line);
                 case "]":
                     $offset++;
-                    return new Token(Token::T_END_ARRAY, null, $line);
+                    return new Token(Token::T_END_ARRAY, $line);
                 case "{":
                     $offset++;
-                    return new Token(Token::T_BEGIN_OBJECT, null, $line);
+                    return new Token(Token::T_BEGIN_OBJECT, $line);
                 case "}":
                     $offset++;
-                    return new Token(Token::T_END_OBJECT, null, $line);
+                    return new Token(Token::T_END_OBJECT, $line);
                 case "t":
                     $this->consumeLiteral("true");
-                    return new Token(Token::T_TRUE, true, $line);
+                    return new Token(Token::T_TRUE, $line, true);
                 case "f":
                     $this->consumeLiteral("false");
-                    return new Token(Token::T_FALSE, false, $line);
+                    return new Token(Token::T_FALSE, $line, false);
                 case "n":
                     $this->consumeLiteral("null");
-                    return new Token(Token::T_NULL, null, $line);
+                    return new Token(Token::T_NULL, $line, null);
                 case '"':
                     $offset++;
-                    return new Token(Token::T_STRING, $this->evaluateDoubleQuotedString(), $line);
+                    return new Token(Token::T_STRING, $line, $this->evaluateDoubleQuotedString());
                 default:
                     if ($byte === "-" || \ctype_digit($byte)) {
-                        return new Token(Token::T_NUMBER, $this->evaluateNumber(), $line);
+                        return new Token(Token::T_NUMBER, $line, $this->evaluateNumber());
                     }
                     throw new ParseException($this->getExceptionMessage());
             }
         }
 
-        return new Token(Token::T_EOF, null, $line);
+        return new Token(Token::T_EOF, $line);
     }
 
     /**
@@ -298,9 +298,6 @@ final class Lexer implements Tokenizer
     }
 
     /**
-     * Evaluates the current escaped unicode sequence
-     * (beginning after leading the \u).
-     *
      * @throws ParseException
      */
     private function evaluateEscapedUnicodeSequence(): string
@@ -337,7 +334,7 @@ final class Lexer implements Tokenizer
     {
         do {
             $data = $this->inputStream->read();
-        } while ($data === "" && $data !== null);
+        } while ($data === "");
 
         $this->buffer = (string)$data;
         $this->offset = 0;
@@ -370,7 +367,9 @@ final class Lexer implements Tokenizer
 
         if (!($ord >> 7)) {
             return $codepoint;
-        } elseif (!(($ord >> 5) ^ 0b110)) {
+        }
+
+        if (!(($ord >> 5) ^ 0b110)) {
             $expect = 1;
         } elseif (!(($ord >> 4) ^ 0b1110)) {
             $expect = 2;
