@@ -28,6 +28,7 @@ final class Lexer implements \IteratorAggregate, Tokenizer
     {
         $buffer = &$this->buffer;
         $offset = &$this->offset;
+        $line = &$this->line;
 
         while (isset($buffer[$offset]) || $this->refillBuffer()) {
             switch ($byte = $buffer[$offset]) {
@@ -37,11 +38,11 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                     break;
                 case "\n":
                     $offset++;
-                    $this->line++;
+                    $line++;
                     break;
                 case "\r":
                     $offset++;
-                    $this->line++;
+                    $line++;
                     if (
                         (isset($buffer[$offset]) || $this->refillBuffer())
                         && $buffer[$offset] === "\n"
@@ -51,47 +52,47 @@ final class Lexer implements \IteratorAggregate, Tokenizer
                     break;
                 case ":":
                     $offset++;
-                    yield self::T_COLON => null;
+                    yield new Token(Token::T_COLON, null, $line);
                     break;
                 case ",":
                     $offset++;
-                    yield self::T_COMMA => null;
+                    yield new Token(Token::T_COMMA, null, $line);
                     break;
                 case "[":
                     $offset++;
-                    yield self::T_BEGIN_ARRAY => null;
+                    yield new Token(Token::T_BEGIN_ARRAY, null, $line);
                     break;
                 case "]":
                     $offset++;
-                    yield self::T_END_ARRAY => null;
+                    yield new Token(Token::T_END_ARRAY, null, $line);
                     break;
                 case "{":
                     $offset++;
-                    yield self::T_BEGIN_OBJECT => null;
+                    yield new Token(Token::T_BEGIN_OBJECT, null, $line);
                     break;
                 case "}":
                     $offset++;
-                    yield self::T_END_OBJECT => null;
+                    yield new Token(Token::T_END_OBJECT, null, $line);
                     break;
                 case "t":
                     $this->consumeLiteral("true");
-                    yield self::T_TRUE => true;
+                    yield new Token(Token::T_TRUE, true, $line);
                     break;
                 case "f":
                     $this->consumeLiteral("false");
-                    yield self::T_FALSE => false;
+                    yield new Token(Token::T_FALSE, false, $line);
                     break;
                 case "n":
                     $this->consumeLiteral("null");
-                    yield self::T_NULL => null;
+                    yield new Token(Token::T_NULL, null, $line);
                     break;
                 case '"':
                     $offset++;
-                    yield self::T_STRING => $this->evaluateDoubleQuotedString();
+                    yield new Token(Token::T_STRING, $this->evaluateDoubleQuotedString(), $line);
                     break;
                 default:
                     if ($byte === "-" || \ctype_digit($byte)) {
-                        yield self::T_NUMBER => $this->evaluateNumber();
+                        yield new Token(Token::T_NUMBER, $this->evaluateNumber(), $line);
                     } else {
                         throw new ParseException($this->getExceptionMessage());
                     }
