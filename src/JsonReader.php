@@ -23,6 +23,9 @@ class JsonReader
     const OBJECT = 7;
     const END_OBJECT = 8;
 
+    /* Options */
+    const FLOAT_AS_STRING = 1;
+
     /**
      * @var IteratorStackIterator|null
      */
@@ -32,6 +35,11 @@ class JsonReader
      * @var array[] Tuples from the parser, cached during tree building.
      */
     private $parseCache = [];
+
+    /**
+     * @var int bit field of reader options
+     */
+    private $options;
 
     /**
      * @var int
@@ -52,6 +60,11 @@ class JsonReader
      * @var int
      */
     private $depth = 0;
+
+    public function __construct(int $options = 0)
+    {
+        $this->options = $options;
+    }
 
     /**
      * @return void
@@ -121,6 +134,10 @@ class JsonReader
             $this->value = $this->buildTree($type);
             $this->parser->push(new \ArrayIterator($this->parseCache));
             $this->parseCache = [];
+        }
+
+        if ($type === self::NUMBER) {
+            return $this->castNumber($this->value);
         }
 
         return $this->value;
@@ -238,6 +255,10 @@ class JsonReader
                 $value = $this->buildTree($type);
             }
 
+            if ($type === self::NUMBER) {
+                $value = $this->castNumber($value);
+            }
+
             if ($name !== null) {
                 $result[$name] = $value;
             } else {
@@ -246,6 +267,15 @@ class JsonReader
         }
 
         return $result;
+    }
+
+    private function castNumber(string $number)
+    {
+        $cast = +$number;
+        if (($this->options & self::FLOAT_AS_STRING) && \is_float($cast)) {
+            return $number;
+        }
+        return $cast;
     }
 
     private function getEndType(int $type): int

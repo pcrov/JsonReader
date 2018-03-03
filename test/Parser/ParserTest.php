@@ -142,7 +142,7 @@ class ParserTest extends TestCase
                     [Token::T_COMMA, null],
                     [Token::T_STRING, "answer"],
                     [Token::T_COLON, null],
-                    [Token::T_NUMBER, 42],
+                    [Token::T_NUMBER, "42"],
                     [Token::T_END_OBJECT, null],
                 ],
                 [
@@ -150,7 +150,7 @@ class ParserTest extends TestCase
                     [JsonReader::BOOL, "foo", false, 1],
                     [JsonReader::ARRAY, "bar", null, 1],
                     [JsonReader::END_ARRAY, "bar", null, 1],
-                    [JsonReader::NUMBER, "answer", 42, 1],
+                    [JsonReader::NUMBER, "answer", "42", 1],
                     [JsonReader::END_OBJECT, null, null, 0],
                 ]
             ],

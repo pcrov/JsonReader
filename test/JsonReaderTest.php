@@ -20,7 +20,7 @@ class JsonReaderTest extends TestCase
             private $nodes = [
                 [JsonReader::OBJECT, null, null, 0],
                 [JsonReader::STRING, "string name", "string value", 1],
-                [JsonReader::NUMBER, "number name", 42, 1],
+                [JsonReader::NUMBER, "number name", "42", 1],
                 [JsonReader::BOOL, "boolean true", true, 1],
                 [JsonReader::BOOL, "boolean false", false, 1],
                 [JsonReader::NULL, "null name", null, 1],
@@ -28,12 +28,12 @@ class JsonReaderTest extends TestCase
                 [JsonReader::ARRAY, null, null, 2],
                 [JsonReader::END_ARRAY, null, null, 2],
                 [JsonReader::OBJECT, null, null, 2],
-                [JsonReader::NUMBER, "number name", 43, 3],
+                [JsonReader::NUMBER, "number name", "-43.0", 3],
                 [JsonReader::END_OBJECT, null, null, 2],
                 [JsonReader::OBJECT, null, null, 2],
                 [JsonReader::END_OBJECT, null, null, 2],
                 [JsonReader::END_ARRAY, "array name", null, 1],
-                [JsonReader::NUMBER, "number name", 44, 1],
+                [JsonReader::NUMBER, "number name", "0.44e-2", 1],
                 [JsonReader::END_OBJECT, null, null, 0],
             ];
 
@@ -109,11 +109,11 @@ class JsonReaderTest extends TestCase
                 null,
                 [
                     'string name' => 'string value',
-                    'number name' => 44,
+                    'number name' => 0.44e-2,
                     'boolean true' => true,
                     'boolean false' => false,
                     'null name' => null,
-                    'array name' => [[], ['number name' => 43], []],
+                    'array name' => [[], ['number name' => -43.0], []],
                 ],
                 0
             ],
@@ -122,16 +122,16 @@ class JsonReaderTest extends TestCase
             [JsonReader::BOOL, 'boolean true', true, 1],
             [JsonReader::BOOL, 'boolean false', false, 1],
             [JsonReader::NULL, 'null name', null, 1],
-            [JsonReader::ARRAY, 'array name', [[], ['number name' => 43], []], 1],
+            [JsonReader::ARRAY, 'array name', [[], ['number name' => -43.0], []], 1],
             [JsonReader::ARRAY, null, [], 2],
             [JsonReader::END_ARRAY, null, null, 2],
-            [JsonReader::OBJECT, null, ['number name' => 43], 2],
-            [JsonReader::NUMBER, 'number name', 43, 3],
+            [JsonReader::OBJECT, null, ['number name' => -43.0], 2],
+            [JsonReader::NUMBER, 'number name', -43.0, 3],
             [JsonReader::END_OBJECT, null, null, 2],
             [JsonReader::OBJECT, null, [], 2],
             [JsonReader::END_OBJECT, null, null, 2],
             [JsonReader::END_ARRAY, 'array name', null, 1],
-            [JsonReader::NUMBER, 'number name', 44, 1],
+            [JsonReader::NUMBER, 'number name', 0.44e-2, 1],
             [JsonReader::END_OBJECT, null, null, 0],
         ];
 
@@ -148,12 +148,59 @@ class JsonReaderTest extends TestCase
         }
     }
 
+    public function testReadWithOptionFloatsAsStrings()
+    {
+        $expected = [
+            [
+                JsonReader::OBJECT,
+                null,
+                [
+                    'string name' => 'string value',
+                    'number name' => "0.44e-2",
+                    'boolean true' => true,
+                    'boolean false' => false,
+                    'null name' => null,
+                    'array name' => [[], ['number name' => "-43.0"], []],
+                ],
+                0
+            ],
+            [JsonReader::STRING, 'string name', 'string value', 1],
+            [JsonReader::NUMBER, 'number name', 42, 1],
+            [JsonReader::BOOL, 'boolean true', true, 1],
+            [JsonReader::BOOL, 'boolean false', false, 1],
+            [JsonReader::NULL, 'null name', null, 1],
+            [JsonReader::ARRAY, 'array name', [[], ['number name' => "-43.0"], []], 1],
+            [JsonReader::ARRAY, null, [], 2],
+            [JsonReader::END_ARRAY, null, null, 2],
+            [JsonReader::OBJECT, null, ['number name' => "-43.0"], 2],
+            [JsonReader::NUMBER, 'number name', "-43.0", 3],
+            [JsonReader::END_OBJECT, null, null, 2],
+            [JsonReader::OBJECT, null, [], 2],
+            [JsonReader::END_OBJECT, null, null, 2],
+            [JsonReader::END_ARRAY, 'array name', null, 1],
+            [JsonReader::NUMBER, 'number name', "0.44e-2", 1],
+            [JsonReader::END_OBJECT, null, null, 0],
+        ];
+
+        $reader = new JsonReader(JsonReader::FLOAT_AS_STRING);
+        $reader->init($this->parser);
+
+        $i = 0;
+        while ($reader->read()) {
+            $this->assertSame($expected[$i][0], $reader->type());
+            $this->assertSame($expected[$i][1], $reader->name());
+            $this->assertSame($expected[$i][2], $reader->value());
+            $this->assertSame($expected[$i][3], $reader->depth());
+            $i++;
+        }
+    }
+
     public function testReadName()
     {
         $expected = [
             [JsonReader::NUMBER, 'number name', 42, 1],
-            [JsonReader::NUMBER, 'number name', 43, 3],
-            [JsonReader::NUMBER, 'number name', 44, 1],
+            [JsonReader::NUMBER, 'number name', -43.0, 3],
+            [JsonReader::NUMBER, 'number name', 0.44e-2, 1],
         ];
 
         $reader = $this->reader;
@@ -190,8 +237,8 @@ class JsonReaderTest extends TestCase
             [JsonReader::BOOL, 'boolean true', true, 1],
             [JsonReader::BOOL, 'boolean false', false, 1],
             [JsonReader::NULL, 'null name', null, 1],
-            [JsonReader::ARRAY, 'array name', [[], ['number name' => 43], []], 1],
-            [JsonReader::NUMBER, 'number name', 44, 1],
+            [JsonReader::ARRAY, 'array name', [[], ['number name' => -43.0], []], 1],
+            [JsonReader::NUMBER, 'number name', 0.44e-2, 1],
             [JsonReader::END_OBJECT, null, null, 0],
         ];
 
@@ -222,7 +269,7 @@ class JsonReaderTest extends TestCase
     {
         $expected = [
             [JsonReader::NUMBER, 'number name', 42, 1],
-            [JsonReader::NUMBER, 'number name', 44, 1],
+            [JsonReader::NUMBER, 'number name', 0.44e-2, 1],
         ];
 
         $reader = $this->reader;
@@ -250,7 +297,7 @@ class JsonReaderTest extends TestCase
 
         $this->assertSame(JsonReader::NUMBER, $reader->type());
         $this->assertSame('number name', $reader->name());
-        $this->assertSame(44, $reader->value());
+        $this->assertSame(0.44e-2, $reader->value());
         $this->assertSame(1, $reader->depth());
     }
 
