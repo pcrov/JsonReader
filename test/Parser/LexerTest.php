@@ -15,7 +15,7 @@ class LexerTest extends TestCase
         $lexer = new Lexer($inputStream);
 
         $token = $lexer->read();
-        $this->assertEquals($expectedToken, $token);
+        $this->assertSame($expectedToken, $token);
     }
 
     /** @dataProvider provideTestTokenization */
@@ -26,7 +26,7 @@ class LexerTest extends TestCase
         $lexer = new Lexer($inputStream);
 
         $token = $lexer->read();
-        $this->assertEquals($expectedToken, $token);
+        $this->assertSame($expectedToken, $token);
     }
 
     /** @dataProvider provideTestLexerError */
@@ -41,7 +41,7 @@ class LexerTest extends TestCase
 
         do {
             $token = $lexer->read();
-        } while ($token->getType() !== Token::T_EOF);
+        } while ($token[0] !== Tokenizer::T_EOF);
     }
 
     /** @dataProvider provideTestLexerError */
@@ -56,7 +56,7 @@ class LexerTest extends TestCase
 
         do {
             $token = $lexer->read();
-        } while ($token->getType() !== Token::T_EOF);
+        } while ($token[0] !== Tokenizer::T_EOF);
     }
 
     public function provideTestTokenization()
@@ -64,131 +64,131 @@ class LexerTest extends TestCase
         return [
             "variety of line breaks" => [
                 "\n\r\r\n\r\n",
-                new Token(Token::T_EOF, 5)
+                [Tokenizer::T_EOF, null, 5]
             ],
             "simple string" => [
                 '"foo"',
-                new Token(Token::T_STRING, 1, "foo")
+                [Tokenizer::T_STRING, "foo", 1]
             ],
             "string surrounded with spaces, a tab, and trailing newline" => [
                 " \t \"foo\" \n",
-                new Token(Token::T_STRING, 1, "foo")
+                [Tokenizer::T_STRING, "foo", 1]
             ],
             "string with escaped backspace" => [
                 '"\b"',
-                new Token(Token::T_STRING, 1, "\x8")
+                [Tokenizer::T_STRING, "\x8", 1]
             ],
             "string with escaped double quote" => [
                 '"\""',
-                new Token(Token::T_STRING, 1, "\"")
+                [Tokenizer::T_STRING, "\"", 1]
             ],
             "string with escaped backslash" => [
                 '"\\\\"',
-                new Token(Token::T_STRING, 1, "\\")
+                [Tokenizer::T_STRING, "\\", 1]
             ],
             "string with escaped forward slash" => [
                 '"\/"',
-                new Token(Token::T_STRING, 1, "/")
+                [Tokenizer::T_STRING, "/", 1]
             ],
             "string with escaped newline" => [
                 '"\n"',
-                new Token(Token::T_STRING, 1, "\n")
+                [Tokenizer::T_STRING, "\n", 1]
             ],
             "string with escaped carriage return" => [
                 '"\r"',
-                new Token(Token::T_STRING, 1, "\r")
+                [Tokenizer::T_STRING, "\r", 1]
             ],
             "string with escaped form feed" => [
                 '"\f"',
-                new Token(Token::T_STRING, 1, "\f")
+                [Tokenizer::T_STRING, "\f", 1]
             ],
             "string with escaped tab" => [
                 '"\t"',
-                new Token(Token::T_STRING, 1, "\t")
+                [Tokenizer::T_STRING, "\t", 1]
             ],
             "string with unicode escaped a" => [
                 '"\u0061"',
-                new Token(Token::T_STRING, 1, "a")
+                [Tokenizer::T_STRING, "a", 1]
             ],
             "string with unicode escaped null" => [
                 '"\u0000"',
-                new Token(Token::T_STRING, 1, "\0")
+                [Tokenizer::T_STRING, "\0", 1]
             ],
             "string with unicode escaped line separator" => [
                 '"\u2028"',
-                new Token(Token::T_STRING, 1, "\u{2028}")
+                [Tokenizer::T_STRING, "\u{2028}", 1]
             ],
             "string with line separator" => [
                 "\"\u{2028}\"",
-                new Token(Token::T_STRING, 1, "\u{2028}")
+                [Tokenizer::T_STRING, "\u{2028}", 1]
             ],
             "string with unicode escaped paragraph separator" => [
                 '"\u2029"',
-                new Token(Token::T_STRING, 1, "\u{2029}")
+                [Tokenizer::T_STRING, "\u{2029}", 1]
             ],
             "string with paragraph separator" => [
                 "\"\u{2029}\"",
-                new Token(Token::T_STRING, 1, "\u{2029}")
+                [Tokenizer::T_STRING, "\u{2029}", 1]
             ],
             "string with unicode escaped surrogate pair" => [
                 '"\uD83D\uDC18"',
-                new Token(Token::T_STRING, 1, "\u{1F418}")
+                [Tokenizer::T_STRING, "\u{1F418}", 1]
             ],
             "string with DEL" => [
                 "\"\x7f\"",
-                new Token(Token::T_STRING, 1, "\x7f")
+                [Tokenizer::T_STRING, "\x7f", 1]
             ],
             "simple number" => [
                 '42',
-                new Token(Token::T_NUMBER, 1, "42")
+                [Tokenizer::T_NUMBER, "42", 1]
             ],
             "negative zero with fractional part" => [
                 '-0.8',
-                new Token(Token::T_NUMBER, 1, "-0.8")
+                [Tokenizer::T_NUMBER, "-0.8", 1]
             ],
             "number with exponent" => [
                 '42e5',
-                new Token(Token::T_NUMBER, 1, "42e5")
+                [Tokenizer::T_NUMBER, "42e5", 1]
             ],
             "number with fractional part and negative exponent" => [
                 '42.8e-5',
-                new Token(Token::T_NUMBER, 1, "42.8e-5")
+                [Tokenizer::T_NUMBER, "42.8e-5", 1]
             ],
             "literal true" => [
                 'true',
-                new Token(Token::T_TRUE, 1, true)
+                [Tokenizer::T_TRUE, true, 1]
             ],
             "literal false" => [
                 'false',
-                new Token(Token::T_FALSE, 1, false)
+                [Tokenizer::T_FALSE, false, 1]
             ],
             "literal null" => [
                 'null',
-                new Token(Token::T_NULL, 1, null)
+                [Tokenizer::T_NULL, null, 1]
             ],
             "colon" => [
                 ':',
-                new Token(Token::T_COLON, 1)
+                [Tokenizer::T_COLON, null, 1]
             ],
             "comma" => [
                 ',',
-                new Token(Token::T_COMMA, 1)
+                [Tokenizer::T_COMMA, null, 1]
             ],
             "open bracket" => [
                 '[',
-                new Token(Token::T_BEGIN_ARRAY, 1)
+                [Tokenizer::T_BEGIN_ARRAY, null, 1]
             ],
             "close bracket" => [
                 ']',
-                new Token(Token::T_END_ARRAY, 1)
+                [Tokenizer::T_END_ARRAY, null, 1]
             ],
             "open curly brace" => [
                 '{',
-                new Token(Token::T_BEGIN_OBJECT, 1)
+                [Tokenizer::T_BEGIN_OBJECT, null, 1]
             ],
             "close curly brace" => [
                 '}',
-                new Token(Token::T_END_OBJECT, 1)
+                [Tokenizer::T_END_OBJECT, null, 1]
             ]
         ];
     }

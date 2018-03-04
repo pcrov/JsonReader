@@ -42,7 +42,9 @@ class ParserTest extends TestCase
         $parser = new \IteratorIterator(new Parser($tokenizer));
         $parser->rewind();
 
-        foreach ($parser as $_);
+        foreach ($parser as $_) {
+            ;
+        }
     }
 
     public function provideTestParser()
@@ -50,7 +52,7 @@ class ParserTest extends TestCase
         return [
             "string" => [
                 [
-                    [Token::T_STRING, "foo"],
+                    [Tokenizer::T_STRING, "foo", 1],
                 ],
                 [
                     [JsonReader::STRING, null, "foo", 0],
@@ -58,7 +60,7 @@ class ParserTest extends TestCase
             ],
             "number" => [
                 [
-                    [Token::T_NUMBER, 42],
+                    [Tokenizer::T_NUMBER, 42, 1],
                 ],
                 [
                     [JsonReader::NUMBER, null, 42, 0],
@@ -66,7 +68,7 @@ class ParserTest extends TestCase
             ],
             "true" => [
                 [
-                    [Token::T_TRUE, true],
+                    [Tokenizer::T_TRUE, true, 1],
                 ],
                 [
                     [JsonReader::BOOL, null, true, 0],
@@ -74,7 +76,7 @@ class ParserTest extends TestCase
             ],
             "false" => [
                 [
-                    [Token::T_FALSE, false],
+                    [Tokenizer::T_FALSE, false, 1],
                 ],
                 [
                     [JsonReader::BOOL, null, false, 0],
@@ -82,7 +84,7 @@ class ParserTest extends TestCase
             ],
             "null" => [
                 [
-                    [Token::T_NULL, null],
+                    [Tokenizer::T_NULL, null, 1],
                 ],
                 [
                     [JsonReader::NULL, null, null, 0],
@@ -90,8 +92,8 @@ class ParserTest extends TestCase
             ],
             "empty array" => [
                 [
-                    [Token::T_BEGIN_ARRAY, null],
-                    [Token::T_END_ARRAY, null],
+                    [Tokenizer::T_BEGIN_ARRAY, null, 1],
+                    [Tokenizer::T_END_ARRAY, null, 1],
                 ],
                 [
                     [JsonReader::ARRAY, null, null, 0],
@@ -100,14 +102,14 @@ class ParserTest extends TestCase
             ],
             "array with varied content" => [
                 [
-                    [Token::T_BEGIN_ARRAY, null],
-                    [Token::T_FALSE, false],
-                    [Token::T_COMMA, null],
-                    [Token::T_BEGIN_ARRAY, null],
-                    [Token::T_END_ARRAY, null],
-                    [Token::T_COMMA, null],
-                    [Token::T_NUMBER, 42],
-                    [Token::T_END_ARRAY, null],
+                    [Tokenizer::T_BEGIN_ARRAY, null, 1],
+                    [Tokenizer::T_FALSE, false, 1],
+                    [Tokenizer::T_COMMA, null, 1],
+                    [Tokenizer::T_BEGIN_ARRAY, null, 1],
+                    [Tokenizer::T_END_ARRAY, null, 1],
+                    [Tokenizer::T_COMMA, null, 1],
+                    [Tokenizer::T_NUMBER, 42, 1],
+                    [Tokenizer::T_END_ARRAY, null, 1],
                 ],
                 [
                     [JsonReader::ARRAY, null, null, 0],
@@ -120,8 +122,8 @@ class ParserTest extends TestCase
             ],
             "empty object" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_END_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 1],
+                    [Tokenizer::T_END_OBJECT, null, 1],
                 ],
                 [
                     [JsonReader::OBJECT, null, null, 0],
@@ -130,20 +132,20 @@ class ParserTest extends TestCase
             ],
             "object with varied content" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "foo"],
-                    [Token::T_COLON, null],
-                    [Token::T_FALSE, false],
-                    [Token::T_COMMA, null],
-                    [Token::T_STRING, "bar"],
-                    [Token::T_COLON, null],
-                    [Token::T_BEGIN_ARRAY, null],
-                    [Token::T_END_ARRAY, null],
-                    [Token::T_COMMA, null],
-                    [Token::T_STRING, "answer"],
-                    [Token::T_COLON, null],
-                    [Token::T_NUMBER, "42"],
-                    [Token::T_END_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 1],
+                    [Tokenizer::T_STRING, "foo", 1],
+                    [Tokenizer::T_COLON, null, 1],
+                    [Tokenizer::T_FALSE, false, 1],
+                    [Tokenizer::T_COMMA, null, 1],
+                    [Tokenizer::T_STRING, "bar", 1],
+                    [Tokenizer::T_COLON, null, 1],
+                    [Tokenizer::T_BEGIN_ARRAY, null, 1],
+                    [Tokenizer::T_END_ARRAY, null, 1],
+                    [Tokenizer::T_COMMA, null, 1],
+                    [Tokenizer::T_STRING, "answer", 1],
+                    [Tokenizer::T_COLON, null, 1],
+                    [Tokenizer::T_NUMBER, "42", 1],
+                    [Tokenizer::T_END_OBJECT, null, 1],
                 ],
                 [
                     [JsonReader::OBJECT, null, null, 0],
@@ -168,114 +170,114 @@ class ParserTest extends TestCase
             ],
             "true followed by null" => [
                 [
-                    [Token::T_TRUE, true],
-                    [Token::T_NULL, null],
+                    [Tokenizer::T_TRUE, true, 42],
+                    [Tokenizer::T_NULL, null, 42],
                 ],
                 "Line 42: Unexpected token T_NULL."
             ],
             "unfinished empty array" => [
                 [
-                    [Token::T_BEGIN_ARRAY, null],
+                    [Tokenizer::T_BEGIN_ARRAY, null, 42],
                 ],
                 "Line 42: Unexpected end of file."
             ],
             "array with missing comma between members" => [
                 [
-                    [Token::T_BEGIN_ARRAY, null],
-                    [Token::T_NULL, null],
-                    [Token::T_TRUE, true],
+                    [Tokenizer::T_BEGIN_ARRAY, null, 42],
+                    [Tokenizer::T_NULL, null, 42],
+                    [Tokenizer::T_TRUE, true, 42],
                 ],
                 "Line 42: Unexpected token T_TRUE."
             ],
             "unfinished empty object" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
                 ],
                 "Line 42: Unexpected end of file."
             ],
             "object member with incorrect token type for name" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_FALSE, false],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_FALSE, false, 42],
                 ],
                 "Line 42: Unexpected token T_FALSE."
             ],
             "object members with missing colon between name and value" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_STRING, "err"],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_STRING, "err", 42],
                 ],
                 "Line 42: Unexpected token T_STRING."
             ],
             "object member with incorrect token type for value" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_COLON, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_COLON, null, 42],
                 ],
                 "Line 42: Unexpected token T_COLON."
             ],
             "incomplete object ending at trailing comma" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_COMMA, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_COMMA, null, 42],
                 ],
                 "Line 42: Unexpected end of file."
             ],
             "object with trailing comma after pair" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_COMMA, null],
-                    [Token::T_END_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_COMMA, null, 42],
+                    [Tokenizer::T_END_OBJECT, null, 42],
                 ],
                 "Line 42: Unexpected token T_END_OBJECT."
             ],
             "object ending with multiple commas after pair" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_COMMA, null],
-                    [Token::T_COMMA, null],
-                    [Token::T_END_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_COMMA, null, 42],
+                    [Tokenizer::T_COMMA, null, 42],
+                    [Tokenizer::T_END_OBJECT, null, 42],
                 ],
                 "Line 42: Unexpected token T_COMMA."
             ],
             "object with multiple commas between pairs" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_COMMA, null],
-                    [Token::T_COMMA, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_END_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_COMMA, null, 42],
+                    [Tokenizer::T_COMMA, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_END_OBJECT, null, 42],
                 ],
                 "Line 42: Unexpected token T_COMMA."
             ],
             "object member with incorrect token type for name after valid pair" => [
                 [
-                    [Token::T_BEGIN_OBJECT, null],
-                    [Token::T_STRING, "name"],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_COMMA, null],
-                    [Token::T_FALSE, false],
-                    [Token::T_COLON, null],
-                    [Token::T_STRING, "value"],
-                    [Token::T_END_OBJECT, null],
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_COMMA, null, 42],
+                    [Tokenizer::T_FALSE, false, 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_END_OBJECT, null, 42],
                 ],
                 "Line 42: Unexpected token T_FALSE."
             ],
@@ -293,16 +295,16 @@ class ParserTest extends TestCase
                 $this->tokens = $tokens;
             }
 
-            public function read(): Token
+            public function read(): array
             {
                 $tokens = &$this->tokens;
 
                 if (($current = \current($tokens)) === false) {
-                    return new Token(Token::T_EOF, 42);
+                    return [Tokenizer::T_EOF, null, 42];
                 }
                 next($tokens);
 
-                return new Token($current[0], 42, $current[1]);
+                return $current;
             }
         };
     }

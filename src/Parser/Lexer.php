@@ -21,7 +21,7 @@ final class Lexer implements Tokenizer
     /**
      * @throws ParseException
      */
-    public function read(): Token
+    public function read(): array
     {
         $buffer = &$this->buffer;
         $offset = &$this->offset;
@@ -49,43 +49,43 @@ final class Lexer implements Tokenizer
                     break;
                 case ":":
                     $offset++;
-                    return new Token(Token::T_COLON, $line);
+                    return [Tokenizer::T_COLON, null, $line];
                 case ",":
                     $offset++;
-                    return new Token(Token::T_COMMA, $line);
+                    return [Tokenizer::T_COMMA, null, $line];
                 case "[":
                     $offset++;
-                    return new Token(Token::T_BEGIN_ARRAY, $line);
+                    return [Tokenizer::T_BEGIN_ARRAY, null, $line];
                 case "]":
                     $offset++;
-                    return new Token(Token::T_END_ARRAY, $line);
+                    return [Tokenizer::T_END_ARRAY, null, $line];
                 case "{":
                     $offset++;
-                    return new Token(Token::T_BEGIN_OBJECT, $line);
+                    return [Tokenizer::T_BEGIN_OBJECT, null, $line];
                 case "}":
                     $offset++;
-                    return new Token(Token::T_END_OBJECT, $line);
+                    return [Tokenizer::T_END_OBJECT, null, $line];
                 case "t":
                     $this->consumeLiteral("true");
-                    return new Token(Token::T_TRUE, $line, true);
+                    return [Tokenizer::T_TRUE, true, $line];
                 case "f":
                     $this->consumeLiteral("false");
-                    return new Token(Token::T_FALSE, $line, false);
+                    return [Tokenizer::T_FALSE, false, $line];
                 case "n":
                     $this->consumeLiteral("null");
-                    return new Token(Token::T_NULL, $line, null);
+                    return [Tokenizer::T_NULL, null, $line];
                 case '"':
                     $offset++;
-                    return new Token(Token::T_STRING, $line, $this->evaluateDoubleQuotedString());
+                    return [Tokenizer::T_STRING, $this->evaluateDoubleQuotedString(), $line];
                 default:
                     if ($byte === "-" || \ctype_digit($byte)) {
-                        return new Token(Token::T_NUMBER, $line, $this->evaluateNumber());
+                        return [Tokenizer::T_NUMBER, $this->evaluateNumber(), $line];
                     }
                     throw new ParseException($this->getExceptionMessage());
             }
         }
 
-        return new Token(Token::T_EOF, $line);
+        return [Tokenizer::T_EOF, null, $line];
     }
 
     /**
