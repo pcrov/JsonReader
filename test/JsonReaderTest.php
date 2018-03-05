@@ -2,6 +2,7 @@
 
 namespace pcrov\JsonReader;
 
+use pcrov\JsonReader\Parser\Parser;
 use PHPUnit\Framework\TestCase;
 
 class JsonReaderTest extends TestCase
@@ -15,7 +16,7 @@ class JsonReaderTest extends TestCase
     public function setUp()
     {
         $this->reader = new JsonReader();
-        $this->parser = new class implements \IteratorAggregate
+        $this->parser = new class implements Parser
         {
             private $nodes = [
                 [JsonReader::OBJECT, null, null, 0],
@@ -37,9 +38,16 @@ class JsonReaderTest extends TestCase
                 [JsonReader::END_OBJECT, null, null, 0],
             ];
 
-            public function getIterator(): \Generator
+            public function read()
             {
-                yield from $this->nodes;
+                $nodes = &$this->nodes;
+
+                if (($current = \current($nodes)) === false) {
+                    return null;
+                }
+                next($nodes);
+
+                return $current;
             }
         };
     }
@@ -86,7 +94,7 @@ class JsonReaderTest extends TestCase
     {
         $reader = $this->reader;
         $this->assertSame(0, $reader->depth());
-        $this->assertSame(0, $reader->type());
+        $this->assertSame(JsonReader::NONE, $reader->type());
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
     }
@@ -96,7 +104,7 @@ class JsonReaderTest extends TestCase
         $reader = $this->reader;
         $reader->init($this->parser);
         $this->assertSame(0, $reader->depth());
-        $this->assertSame(0, $reader->type());
+        $this->assertSame(JsonReader::NONE, $reader->type());
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
     }
@@ -148,7 +156,7 @@ class JsonReaderTest extends TestCase
         }
     }
 
-    public function testReadWithOptionFloatsAsStrings()
+    public function testReadWithOptionFloatAsString()
     {
         $expected = [
             [
@@ -224,7 +232,7 @@ class JsonReaderTest extends TestCase
         $reader->init($this->parser);
         while ($reader->read());
         $this->assertSame(0, $reader->depth());
-        $this->assertSame(0, $reader->type());
+        $this->assertSame(JsonReader::NONE, $reader->type());
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
     }
@@ -307,7 +315,7 @@ class JsonReaderTest extends TestCase
         $reader->init($this->parser);
         while ($reader->next());
         $this->assertSame(0, $reader->depth());
-        $this->assertSame(0, $reader->type());
+        $this->assertSame(JsonReader::NONE, $reader->type());
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
     }
@@ -319,7 +327,7 @@ class JsonReaderTest extends TestCase
         $reader->read();
         $reader->close();
         $this->assertSame(0, $reader->depth());
-        $this->assertSame(0, $reader->type());
+        $this->assertSame(JsonReader::NONE, $reader->type());
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
     }

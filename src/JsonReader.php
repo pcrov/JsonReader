@@ -2,39 +2,39 @@
 
 namespace pcrov\JsonReader;
 
-use pcrov\IteratorStackIterator;
 use pcrov\JsonReader\InputStream\IOException;
 use pcrov\JsonReader\InputStream\Stream;
 use pcrov\JsonReader\InputStream\Uri;
 use pcrov\JsonReader\InputStream\StringInput;
-use pcrov\JsonReader\Parser\Parser;
+use pcrov\JsonReader\Parser\JsonParser;
 use pcrov\JsonReader\Parser\Lexer;
+use pcrov\JsonReader\Parser\Parser;
 
 class JsonReader
 {
     /* Node types */
-    const NONE = 0;
-    const STRING = 1;
-    const NUMBER = 2;
-    const BOOL = 3;
-    const NULL = 4;
-    const ARRAY = 5;
-    const END_ARRAY = 6;
-    const OBJECT = 7;
-    const END_OBJECT = 8;
+    const NONE = "NONE";
+    const STRING = "STRING";
+    const NUMBER = "NUMBER";
+    const BOOL = "BOOL";
+    const NULL = "NULL";
+    const ARRAY = "ARRAY";
+    const END_ARRAY = "END_ARRAY";
+    const OBJECT = "OBJECT";
+    const END_OBJECT = "END_OBJECT";
 
     /* Options */
-    const FLOAT_AS_STRING = 1;
+    const FLOAT_AS_STRING = 0b00000001;
 
     /**
-     * @var IteratorStackIterator|null
+     * @var Parser|null
      */
     private $parser;
 
     /**
      * @var array[] Tuples from the parser, cached during tree building.
      */
-    private $parseCache = [];
+    private $cache = [];
 
     /**
      * @var int bit field of reader options
@@ -42,7 +42,7 @@ class JsonReader
     private $options;
 
     /**
-     * @var int
+     * @var string
      */
     private $type = self::NONE;
 
@@ -69,13 +69,10 @@ class JsonReader
     /**
      * @return void
      */
-    public function init(\Traversable $parser)
+    public function init(Parser $parser)
     {
         $this->close();
-        $stack = new IteratorStackIterator();
-        $stack->push(new \IteratorIterator($parser));
-        $stack->rewind();
-        $this->parser = $stack;
+        $this->parser = $parser;
     }
 
     /**
@@ -83,7 +80,7 @@ class JsonReader
      */
     public function json(string $json)
     {
-        $this->init(new Parser(new Lexer(new StringInput($json))));
+        $this->init(new JsonParser(new Lexer(new StringInput($json))));
     }
 
     /**
@@ -93,7 +90,7 @@ class JsonReader
      */
     public function open(string $uri)
     {
-        $this->init(new Parser(new Lexer(new Uri($uri))));
+        $this->init(new JsonParser(new Lexer(new Uri($uri))));
     }
 
     /**
@@ -104,13 +101,13 @@ class JsonReader
      */
     public function stream($stream)
     {
-        $this->init(new Parser(new Lexer(new Stream($stream))));
+        $this->init(new JsonParser(new Lexer(new Stream($stream))));
     }
 
     /**
-     * @return int One of the JsonReader node constants.
+     * @return string One of the JsonReader node constants.
      */
-    public function type(): int
+    public function type(): string
     {
         return $this->type;
     }
@@ -128,19 +125,18 @@ class JsonReader
      */
     public function value()
     {
-        $type = $this->type();
+        $type = $this->type;
+        $value = &$this->value;
 
-        if ($this->value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
-            $this->value = $this->buildTree($type);
-            $this->parser->push(new \ArrayIterator($this->parseCache));
-            $this->parseCache = [];
+        if ($value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
+            $value = $this->buildTree($type, empty($this->cache));
         }
 
         if ($type === self::NUMBER) {
-            return $this->castNumber($this->value);
+            return $this->castNumber($value);
         }
 
-        return $this->value;
+        return $value;
     }
 
     public function depth(): int
@@ -151,32 +147,32 @@ class JsonReader
     /**
      * @throws Exception
      */
-    public function next(string $name = null): bool
+    public function next(string $target = null): bool
     {
         if ($this->parser === null) {
             throw new Exception("Load data before trying to read.");
         }
 
-        $depth = $this->depth();
-        $end = $this->getEndType($this->type());
+        $currentDepth = $this->depth;
+        $endType = $this->getEndType($this->type);
 
         while ($result = $this->read()) {
-            if ($this->depth() <= $depth) {
+            if ($this->depth <= $currentDepth) {
                 break;
             }
         }
 
         // If we were on an object or array when called, we want to skip its end node.
-        if ($end !== self::NONE &&
-            $this->depth() === $depth &&
-            $this->type() === $end
+        if ($endType !== self::NONE &&
+            $this->depth === $currentDepth &&
+            $this->type === $endType
         ) {
             $result = $this->read();
         }
 
-        if ($name !== null) {
+        if ($target !== null) {
             do {
-                if ($this->name() === $name) {
+                if ($this->name === $target) {
                     break;
                 }
             } while ($result = $this->next());
@@ -188,7 +184,7 @@ class JsonReader
     /**
      * @throws Exception
      */
-    public function read(string $name = null): bool
+    public function read(string $target = null): bool
     {
         $parser = $this->parser;
 
@@ -196,26 +192,28 @@ class JsonReader
             throw new Exception("Load data before trying to read.");
         }
 
-        if (!$parser->valid()) {
+        if (empty($this->cache)) {
+            $node = $parser->read();
+        } else {
+            $node = \array_shift($this->cache);
+        }
+
+        if ($node === null) {
             $this->resetNode();
             return false;
         }
 
-        //@formatter:off silly ide
         list (
             $this->type,
             $this->name,
             $this->value,
             $this->depth
-        ) = $parser->current();
-        //@formatter:on
-
-        $parser->next();
+            ) = $node;
 
         $result = true;
-        if ($name !== null) {
+        if ($target !== null) {
             do {
-                if ($this->name() === $name) {
+                if ($this->name === $target) {
                     break;
                 }
             } while ($result = $this->read());
@@ -233,26 +231,31 @@ class JsonReader
         $this->parser = null;
     }
 
-    private function buildTree(int $type): array
+    private function buildTree(string $type, bool $writeCache): array
     {
         \assert($type === self::ARRAY || $type === self::OBJECT);
 
         $parser = $this->parser;
+        $cache = &$this->cache;
         $end = $this->getEndType($type);
         $result = [];
 
         while (true) {
-            $current = $parser->current();
-            $this->parseCache[] = $current;
-            list ($type, $name, $value) = $current;
-            $parser->next();
+            if ($writeCache) {
+                $node = $parser->read();
+                $cache[] = $node;
+            } else {
+                $node = \current($cache);
+                \next($cache);
+            }
+            list ($type, $name, $value) = $node;
 
             if ($type === $end) {
                 break;
             }
 
             if ($type === self::ARRAY || $type === self::OBJECT) {
-                $value = $this->buildTree($type);
+                $value = $this->buildTree($type, $writeCache);
             }
 
             if ($type === self::NUMBER) {
@@ -269,6 +272,9 @@ class JsonReader
         return $result;
     }
 
+    /**
+     * @return int|float|string
+     */
     private function castNumber(string $number)
     {
         $cast = +$number;
@@ -278,7 +284,7 @@ class JsonReader
         return $cast;
     }
 
-    private function getEndType(int $type): int
+    private function getEndType(string $type): string
     {
         switch ($type) {
             case self::ARRAY:
@@ -296,5 +302,6 @@ class JsonReader
         $this->name = null;
         $this->value = null;
         $this->depth = 0;
+        $this->cache = [];
     }
 }

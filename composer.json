@@ -19,7 +19,6 @@
     "require": {
         "php": "^7.0",
         "ext-intl": "*",
-        "pcrov/iteratorstackiterator": "^1",
         "pcrov/unicode": "^0.1"
     },
     "require-dev": {

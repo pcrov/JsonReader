@@ -5,7 +5,7 @@ namespace pcrov\JsonReader\Parser;
 use pcrov\JsonReader\JsonReader;
 use PHPUnit\Framework\TestCase;
 
-class ParserTest extends TestCase
+class JsonParserTest extends TestCase
 {
 
     /** @var Tokenizer */
@@ -16,17 +16,12 @@ class ParserTest extends TestCase
     {
         $tokenizer = $this->tokenizer;
         $tokenizer->setTokens($input);
+        $parser = new JsonParser($tokenizer);
 
-        $parser = new \IteratorIterator(new Parser($tokenizer));
-        $parser->rewind();
-        $this->assertTrue($parser->valid());
-
-        $iterator = new \MultipleIterator(\MultipleIterator::MIT_NEED_ANY | \MultipleIterator::MIT_KEYS_ASSOC);
-        $iterator->attachIterator($parser, "parser");
-        $iterator->attachIterator(new \ArrayIterator($expected), "expected");
-
-        foreach ($iterator as $tuple) {
-            $this->assertSame($tuple["expected"], $tuple["parser"]);
+        $i = 0;
+        while (($node = $parser->read()) !== null) {
+            self::assertSame($expected[$i], $node);
+            $i++;
         }
     }
 
@@ -38,11 +33,9 @@ class ParserTest extends TestCase
 
         $tokenizer = $this->tokenizer;
         $tokenizer->setTokens($input);
+        $parser = new JsonParser($tokenizer);
 
-        $parser = new \IteratorIterator(new Parser($tokenizer));
-        $parser->rewind();
-
-        foreach ($parser as $_) {
+        while ($parser->read() !== null) {
             ;
         }
     }
