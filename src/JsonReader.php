@@ -24,7 +24,7 @@ class JsonReader
     const END_OBJECT = "END_OBJECT";
 
     /* Options */
-    const FLOAT_AS_STRING = 0b00000001;
+    const FLOATS_AS_STRINGS = 0b00000001;
 
     /**
      * @var Parser|null
@@ -278,7 +278,7 @@ class JsonReader
     private function castNumber(string $number)
     {
         $cast = +$number;
-        if (($this->options & self::FLOAT_AS_STRING) && \is_float($cast)) {
+        if (($this->options & self::FLOATS_AS_STRINGS) && \is_float($cast)) {
             return $number;
         }
         return $cast;

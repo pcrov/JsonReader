@@ -190,7 +190,7 @@ class JsonReaderTest extends TestCase
             [JsonReader::END_OBJECT, null, null, 0],
         ];
 
-        $reader = new JsonReader(JsonReader::FLOAT_AS_STRING);
+        $reader = new JsonReader(JsonReader::FLOATS_AS_STRINGS);
         $reader->init($this->parser);
 
         $i = 0;
