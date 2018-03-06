@@ -5,6 +5,7 @@ namespace pcrov\JsonReader\Parser;
 use pcrov\JsonReader\InputStream\InputStream;
 use function pcrov\Unicode\surrogate_pair_to_code_point;
 use function pcrov\Unicode\utf8_get_invalid_byte_sequence;
+use function pcrov\Unicode\utf8_validate;
 
 final class Lexer implements Tokenizer
 {
@@ -79,7 +80,7 @@ final class Lexer implements Tokenizer
                     return [Tokenizer::T_STRING, $this->evaluateDoubleQuotedString(), $line];
                 default:
                     if ($byte === "-" || \ctype_digit($byte)) {
-                        return [Tokenizer::T_NUMBER, $this->evaluateNumber(), $line];
+                        return [Tokenizer::T_NUMBER, $this->scanNumber(), $line];
                     }
                     throw new ParseException($this->getExceptionMessage());
             }
@@ -162,14 +163,14 @@ final class Lexer implements Tokenizer
      */
     private function evaluateDoubleQuotedString(): string
     {
-        static $invalidBytes = "\x0\x1\x2\x3\x4\x5\x6\x7\x8\x9\xA\xB\xC\xD\xE\xF\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
+        static $scanRegex = '/[^\x0-\x1f\\\\"]*+/';
         static $escapeChar = "\\";
         static $endChar = '"';
 
         $buffer = &$this->buffer;
         $offset = &$this->offset;
 
-        $string = $this->scanUntil($invalidBytes . $escapeChar . $endChar);
+        $string = $this->pregScan($scanRegex);
 
         while (
             (isset($buffer[$offset]) || $this->refillBuffer())
@@ -194,7 +195,7 @@ final class Lexer implements Tokenizer
                 continue;
             }
 
-            $string .= $this->scanUntil($invalidBytes . $escapeChar . $endChar);
+            $string .= $this->pregScan($scanRegex);
         }
 
         // Unexpected end of file.
@@ -202,9 +203,8 @@ final class Lexer implements Tokenizer
             throw new ParseException($this->getExceptionMessage());
         }
 
-        // Invalid UTF-8
-        if (($invalidSequence = utf8_get_invalid_byte_sequence($string)) !== null) {
-            throw new ParseException($this->getIllFormedUtf8ExceptionMessage($invalidSequence));
+        if (!utf8_validate($string)) {
+            throw new ParseException($this->getIllFormedUtf8ExceptionMessage(utf8_get_invalid_byte_sequence($string)));
         }
 
         // End "
@@ -213,15 +213,22 @@ final class Lexer implements Tokenizer
     }
 
     /**
-     * Numbers in JSON match the regex:
-     *      -?(0|[1-9]\d*)(\.\d+)?([eE][-+]?\d+)?
-     *
      * @throws ParseException
      */
-    private function evaluateNumber(): string
+    private function scanNumber(): string
     {
+        static $scanNumberRegex = '/-?+(?:0|[1-9]\d*+)(?:\.(*COMMIT)\d++)?+(?:[eE](*COMMIT)[-+]?+\d++)?+(?=\D)/A';
+        static $scanDigitsRegex = '/\d*/';
         $buffer = &$this->buffer;
         $offset = &$this->offset;
+
+        // Short-circuit for the common case where there's a complete number in the buffer.
+        if (\preg_match($scanNumberRegex, $buffer, $m, 0, $offset)) {
+            $number = $m[0];
+            $numberLength = \strlen($number);
+            $offset += $numberLength;
+            return $number;
+        }
 
         $number = "";
         $byte = $buffer[$offset];
@@ -239,7 +246,7 @@ final class Lexer implements Tokenizer
             $offset++;
             $number .= $byte;
         } elseif (\ctype_digit($byte)) {
-            $number .= $this->scanDigits();
+            $number .= $this->pregScan($scanDigitsRegex);
         } else {
             throw new ParseException($this->getExceptionMessage());
         }
@@ -257,7 +264,7 @@ final class Lexer implements Tokenizer
                 throw new ParseException($this->getExceptionMessage());
             }
 
-            $digits = $this->scanDigits();
+            $digits = $this->pregScan($scanDigitsRegex);
             if ($digits === "") {
                 throw new ParseException($this->getExceptionMessage());
             }
@@ -287,7 +294,7 @@ final class Lexer implements Tokenizer
                 }
             }
 
-            $digits = $this->scanDigits();
+            $digits = $this->pregScan($scanDigitsRegex);
             if ($digits === "") {
                 throw new ParseException($this->getExceptionMessage());
             }
@@ -451,13 +458,6 @@ final class Lexer implements Tokenizer
         );
     }
 
-    private function scanDigits(): string
-    {
-        static $digits = "0123456789";
-
-        return $this->scanWhile($digits);
-    }
-
     /**
      * Scans four hexadecimal characters.
      *
@@ -477,7 +477,7 @@ final class Lexer implements Tokenizer
         return $sequence;
     }
 
-    private function scanUntil(string $mask): string
+    private function pregScan(string $regex): string
     {
         $buffer = &$this->buffer;
         $offset = &$this->offset;
@@ -486,8 +486,9 @@ final class Lexer implements Tokenizer
             return "";
         }
 
-        $matchedLength = \strcspn($buffer, $mask, $offset);
-        $matchedBytes = \substr($buffer, $offset, $matchedLength);
+        \preg_match($regex, $buffer, $m, 0, $offset);
+        $matchedBytes = $m[0];
+        $matchedLength = \strlen($matchedBytes);
         $offset += $matchedLength;
 
         // Complete match
@@ -496,10 +497,10 @@ final class Lexer implements Tokenizer
         }
 
         // Possibly more to come
-        return $matchedBytes . $this->scanUntil($mask);
+        return $matchedBytes . $this->pregScan($regex);
     }
 
-    private function scanWhile(string $mask, int $maxLength = null): string
+    private function scanWhile(string $mask, int $maxLength): string
     {
         \assert($maxLength >= 0, "maxLength cannot be negative");
 
@@ -510,11 +511,7 @@ final class Lexer implements Tokenizer
             return "";
         }
 
-        if ($maxLength === null) {
-            $matchedLength = \strspn($buffer, $mask, $offset);
-        } else {
-            $matchedLength = \strspn($buffer, $mask, $offset, $maxLength);
-        }
+        $matchedLength = \strspn($buffer, $mask, $offset, $maxLength);
         $matchedBytes = \substr($buffer, $offset, $matchedLength);
         $offset += $matchedLength;
 
@@ -524,7 +521,6 @@ final class Lexer implements Tokenizer
         }
 
         // Possibly more to come
-        $needed = $maxLength === null ? null : $maxLength - $matchedLength;
-        return $matchedBytes . $this->scanWhile($mask, $needed);
+        return $matchedBytes . $this->scanWhile($mask, $maxLength - $matchedLength);
     }
 }

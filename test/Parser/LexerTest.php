@@ -142,6 +142,10 @@ class LexerTest extends TestCase
                 '42',
                 [Tokenizer::T_NUMBER, "42", 1]
             ],
+            "number with surrounding space" => [
+                ' 42 ',
+                [Tokenizer::T_NUMBER, "42", 1]
+            ],
             "negative zero with fractional part" => [
                 '-0.8',
                 [Tokenizer::T_NUMBER, "-0.8", 1]
