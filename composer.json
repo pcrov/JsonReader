@@ -22,7 +22,8 @@
         "pcrov/unicode": "^0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^6.5"
+        "phpunit/phpunit": "^6.5",
+        "nst/JSONTestSuite": "^1"
     },
     "autoload": {
         "psr-4": {
@@ -33,5 +34,19 @@
         "psr-4": {
             "pcrov\\JsonReader\\": "test/"
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "nst/JSONTestSuite",
+                "version": "1.0",
+                "source": {
+                    "url": "https://github.com/nst/JSONTestSuite",
+                    "type": "git",
+                    "reference": "origin/master"
+                }
+            }
+        }
+    ]
 }
