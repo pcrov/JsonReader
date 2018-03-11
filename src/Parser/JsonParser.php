@@ -21,30 +21,30 @@ final class JsonParser implements Parser
         Tokenizer::T_END_OBJECT => JsonReader::END_OBJECT
     ];
 
+    private static $stateDocumentEnd = 0;
+    private static $stateDocumentStart = 1;
+    private static $stateAfterArrayStart = 2;
+    private static $stateAfterArrayMember = 3;
+    private static $stateAfterObjectStart = 4;
+    private static $stateAfterObjectMember = 5;
+
+    private static $inArray = 1;
+    private static $inObject = 2;
+
     /**
      * @var Tokenizer
      */
     private $tokenizer;
 
-    /**
-     * @var int
-     */
     private $depth = 0;
-
-    /**
-     * @var string|null Name of the current object pair.
-     */
-    private $name;
-
-    /**
-     * @var \Generator
-     */
-    private $nodeGenerator;
+    private $state;
+    private $names = [null];
+    private $stack = [];
 
     public function __construct(Tokenizer $tokenizer)
     {
         $this->tokenizer = $tokenizer;
-        $this->nodeGenerator = $this->getNodeGenerator();
+        $this->state = self::$stateDocumentStart;
     }
 
     /**
@@ -52,23 +52,121 @@ final class JsonParser implements Parser
      */
     public function read()
     {
-        $this->nodeGenerator->next();
-        return $this->nodeGenerator->current();
-    }
-
-    /**
-     * @throws ParseException
-     */
-    private function getNodeGenerator(): \Generator
-    {
-        yield; // skipped by first read()
-
+        $depth = &$this->depth;
+        $names = &$this->names;
+        $stack = &$this->stack;
+        $state = &$this->state;
         $tokenizer = $this->tokenizer;
-        yield from $this->parseValue($tokenizer->read());
 
         $token = $tokenizer->read();
-        if ($token[0] !== Tokenizer::T_EOF) {
-            throw new ParseException($this->getExceptionMessage($token));
+
+        switch ($state) {
+            case self::$stateAfterArrayStart:
+                if ($token[0] === Tokenizer::T_END_ARRAY) {
+                    goto end_of_array_or_object;
+                }
+
+                $names[$depth] = null;
+                $state = self::$stateAfterArrayMember;
+                goto value;
+
+            case self::$stateAfterArrayMember:
+                if ($token[0] === Tokenizer::T_END_ARRAY) {
+                    goto end_of_array_or_object;
+                }
+
+                if ($token[0] !== Tokenizer::T_COMMA) {
+                    throw new ParseException($this->getExceptionMessage($token));
+                }
+
+                $token = $tokenizer->read();
+                goto value;
+
+            case self::$stateAfterObjectStart:
+                if ($token[0] === Tokenizer::T_END_OBJECT) {
+                    goto end_of_array_or_object;
+                }
+
+                $state = self::$stateAfterObjectMember;
+                goto object_member;
+
+            case self::$stateAfterObjectMember:
+                if ($token[0] === Tokenizer::T_END_OBJECT) {
+                    goto end_of_array_or_object;
+                }
+
+                if ($token[0] !== Tokenizer::T_COMMA) {
+                    throw new ParseException($this->getExceptionMessage($token));
+                }
+
+                $token = $tokenizer->read();
+                goto object_member;
+
+            case self::$stateDocumentStart:
+                $state = self::$stateDocumentEnd;
+                goto value;
+
+            case self::$stateDocumentEnd:
+                if ($token[0] !== Tokenizer::T_EOF) {
+                    throw new ParseException($this->getExceptionMessage($token));
+                }
+                return null;
+        }
+
+        object_member: {
+            if ($token[0] !== Tokenizer::T_STRING) {
+                throw new ParseException($this->getExceptionMessage($token));
+            }
+            $names[$depth] = $token[1];
+
+            $token = $tokenizer->read();
+            if ($token[0] !== Tokenizer::T_COLON) {
+                throw new ParseException($this->getExceptionMessage($token));
+            }
+
+            $token = $tokenizer->read();
+            goto value;
+        }
+
+        end_of_array_or_object: {
+            \array_pop($stack);
+            $depth--;
+            switch (\end($stack)) {
+                case self::$inArray:
+                    $state = self::$stateAfterArrayMember;
+                    break;
+                case self::$inObject:
+                    $state = self::$stateAfterObjectMember;
+                    break;
+                default:
+                    $state = self::$stateDocumentEnd;
+            }
+            return [self::$tokenTypeMap[$token[0]], $names[$depth], $token[1], $depth];
+        }
+
+        value: {
+            $currentDepth = $depth;
+            switch ($token[0]) {
+                case Tokenizer::T_STRING:
+                case Tokenizer::T_NUMBER:
+                case Tokenizer::T_TRUE:
+                case Tokenizer::T_FALSE:
+                case Tokenizer::T_NULL:
+                    break;
+                case Tokenizer::T_BEGIN_ARRAY:
+                    $state = self::$stateAfterArrayStart;
+                    $stack[] = self::$inArray;
+                    $depth++;
+                    break;
+                case Tokenizer::T_BEGIN_OBJECT:
+                    $state = self::$stateAfterObjectStart;
+                    $stack[] = self::$inObject;
+                    $depth++;
+                    break;
+                default:
+                    throw new ParseException($this->getExceptionMessage($token));
+            }
+            return [self::$tokenTypeMap[$token[0]], $names[$currentDepth], $token[1], $currentDepth];
         }
     }
 
@@ -88,130 +186,5 @@ final class JsonParser implements Parser
             $tokenLine,
             $tokenType
         );
-    }
-
-    /**
-     * @throws ParseException
-     */
-    private function parseArray(): \Generator
-    {
-        $tokenizer = $this->tokenizer;
-        $depth = &$this->depth;
-        $name = &$this->name;
-
-        $arrayName = $name;
-        yield [JsonReader::ARRAY, $arrayName, null, $depth];
-
-        $name = null;
-        $depth++;
-        $token = $tokenizer->read();
-        $tokenType = $token[0];
-
-        if ($tokenType !== Tokenizer::T_END_ARRAY) {
-            yield from $this->parseValue($token);
-            $token = $tokenizer->read();
-            $tokenType = $token[0];
-
-            while ($tokenType === Tokenizer::T_COMMA) {
-                yield from $this->parseValue($tokenizer->read());
-                $token = $tokenizer->read();
-                $tokenType = $token[0];
-            }
-        }
-
-        if ($tokenType !== Tokenizer::T_END_ARRAY) {
-            throw new ParseException($this->getExceptionMessage($token));
-        }
-
-        $depth--;
-        yield [JsonReader::END_ARRAY, $arrayName, null, $depth];
-    }
-
-    /**
-     * @throws ParseException
-     */
-    private function parseObject(): \Generator
-    {
-        $tokenizer = $this->tokenizer;
-        $depth = &$this->depth;
-
-        $objectName = $this->name;
-        yield [JsonReader::OBJECT, $objectName, null, $depth];
-
-        $depth++;
-        $token = $tokenizer->read();
-        $tokenType = $token[0];
-
-        // name:value property pairs
-        if ($tokenType === Tokenizer::T_STRING) {
-            yield from $this->parsePair($token);
-            $token = $tokenizer->read();
-            $tokenType = $token[0];
-
-            while ($tokenType === Tokenizer::T_COMMA) {
-                yield from $this->parsePair($tokenizer->read());
-                $token = $tokenizer->read();
-                $tokenType = $token[0];
-            }
-        }
-
-        if ($tokenType !== Tokenizer::T_END_OBJECT) {
-            throw new ParseException($this->getExceptionMessage($token));
-        }
-
-        $depth--;
-        yield [JsonReader::END_OBJECT, $objectName, null, $depth];
-    }
-
-    /**
-     * @throws ParseException
-     */
-    private function parsePair(array $token): \Generator
-    {
-        $tokenizer = $this->tokenizer;
-        $name = &$this->name;
-
-        // name
-        list($tokenType, $tokenValue) = $token;
-        if ($tokenType !== Tokenizer::T_STRING) {
-            throw new ParseException($this->getExceptionMessage($token));
-        }
-        $name = $tokenValue;
-
-        $token = $tokenizer->read();
-        // :
-        if ($token[0] !== Tokenizer::T_COLON) {
-            throw new ParseException($this->getExceptionMessage($token));
-        }
-
-        // value
-        yield from $this->parseValue($tokenizer->read());
-        $name = null;
-    }
-
-    /**
-     * @throws ParseException
-     */
-    private function parseValue(array $token): \Generator
-    {
-        list($tokenType, $tokenValue) = $token;
-
-        switch ($tokenType) {
-            case Tokenizer::T_STRING:
-            case Tokenizer::T_NUMBER:
-            case Tokenizer::T_TRUE:
-            case Tokenizer::T_FALSE:
-            case Tokenizer::T_NULL:
-                yield [self::$tokenTypeMap[$tokenType], $this->name, $tokenValue, $this->depth];
-                break;
-            case Tokenizer::T_BEGIN_ARRAY:
-                yield from $this->parseArray();
-                break;
-            case Tokenizer::T_BEGIN_OBJECT:
-                yield from $this->parseObject();
-                break;
-            default:
-                throw new ParseException($this->getExceptionMessage($token));
-        }
     }
 }
