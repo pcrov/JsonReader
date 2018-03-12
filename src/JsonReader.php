@@ -26,6 +26,11 @@ class JsonReader
     /* Options */
     const FLOATS_AS_STRINGS = 0b00000001;
 
+    private static $endTypeMap = [
+        self::ARRAY => self::END_ARRAY,
+        self::OBJECT => self::END_OBJECT
+    ];
+
     /**
      * @var Parser|null
      */
@@ -35,6 +40,11 @@ class JsonReader
      * @var array[] Tuples from the parser, cached during tree building.
      */
     private $cache = [];
+
+    /**
+     * @var bool A fresh cache that hasn't been entered can be dropped entirely when calling next().
+     */
+    private $cacheIsFresh = false;
 
     /**
      * @var int bit field of reader options
@@ -128,12 +138,17 @@ class JsonReader
         $type = $this->type;
         $value = &$this->value;
 
-        if ($value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
-            $value = $this->buildTree($type, empty($this->cache));
-        }
-
         if ($type === self::NUMBER) {
             return $this->castNumber($value);
+        }
+
+        if ($value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
+            if (empty($this->cache)) {
+                $value = $this->buildTree($type, true);
+                $this->cacheIsFresh = true;
+            } else {
+                $value = $this->buildTree($type, false);
+            }
         }
 
         return $value;
@@ -153,8 +168,13 @@ class JsonReader
             throw new Exception("Load data before trying to read.");
         }
 
+        if ($this->cacheIsFresh) {
+            $this->cache = [];
+            $this->cacheIsFresh = false;
+        }
+
         $currentDepth = $this->depth;
-        $endType = $this->getEndType($this->type);
+        $endType = self::$endTypeMap[$this->type] ?? self::NONE;
 
         while ($result = $this->read()) {
             if ($this->depth <= $currentDepth) {
@@ -196,6 +216,7 @@ class JsonReader
             $node = $parser->read();
         } else {
             $node = \array_shift($this->cache);
+            $this->cacheIsFresh = false;
         }
 
         if ($node === null) {
@@ -237,7 +258,7 @@ class JsonReader
 
         $parser = $this->parser;
         $cache = &$this->cache;
-        $end = $this->getEndType($type);
+        $endType = self::$endTypeMap[$type] ?? self::NONE;
         $result = [];
 
         while (true) {
@@ -250,16 +271,14 @@ class JsonReader
             }
             list ($type, $name, $value) = $node;
 
-            if ($type === $end) {
+            if ($type === $endType) {
                 break;
-            }
-
-            if ($type === self::ARRAY || $type === self::OBJECT) {
-                $value = $this->buildTree($type, $writeCache);
             }
 
             if ($type === self::NUMBER) {
                 $value = $this->castNumber($value);
+            } elseif ($type === self::ARRAY || $type === self::OBJECT) {
+                $value = $this->buildTree($type, $writeCache);
             }
 
             if ($name !== null) {
@@ -284,18 +303,6 @@ class JsonReader
         return $cast;
     }
 
-    private function getEndType(string $type): string
-    {
-        switch ($type) {
-            case self::ARRAY:
-                return self::END_ARRAY;
-            case self::OBJECT:
-                return self::END_OBJECT;
-            default:
-                return self::NONE;
-        }
-    }
-
     private function resetNode()
     {
         $this->type = self::NONE;
@@ -303,5 +310,6 @@ class JsonReader
         $this->value = null;
         $this->depth = 0;
         $this->cache = [];
+        $this->cacheIsFresh = false;
     }
 }
