@@ -52,28 +52,37 @@ class JsonReaderTest extends TestCase
         };
     }
 
-    /** @doesNotPerformAssertions */
     public function testJson()
     {
         $reader = $this->reader;
         $reader->json(file_get_contents(__DIR__ . "/../composer.json"));
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(JsonReader::NONE, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
         while ($reader->read());
     }
 
-    /** @doesNotPerformAssertions */
     public function testOpen()
     {
         $reader = $this->reader;
         $reader->open(__DIR__ . "/../composer.json");
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(JsonReader::NONE, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
         while ($reader->read());
     }
 
-    /** @doesNotPerformAssertions */
     public function testStream()
     {
         $reader = $this->reader;
         $handle = fopen((__DIR__ . "/../composer.json"), "rb");
         $reader->stream($handle);
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(JsonReader::NONE, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
         while ($reader->read());
         fclose($handle);
     }

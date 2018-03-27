@@ -274,6 +274,19 @@ class JsonParserTest extends TestCase
                 ],
                 "Line 42: Unexpected token T_FALSE."
             ],
+            "object members with missing comma" => [
+                [
+                    [Tokenizer::T_BEGIN_OBJECT, null, 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_STRING, "name", 42],
+                    [Tokenizer::T_COLON, null, 42],
+                    [Tokenizer::T_STRING, "value", 42],
+                    [Tokenizer::T_END_OBJECT, null, 42],
+                ],
+                "Line 42: Unexpected token T_STRING."
+            ],
         ];
     }
 

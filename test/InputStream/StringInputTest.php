@@ -12,4 +12,10 @@ class StringInputTest extends TestCase
         $stringInput = new StringInput($string);
         $this->assertSame($string, $stringInput->read());
     }
+
+    public function testEmptyString()
+    {
+        $stringInput = new StringInput("");
+        $this->assertNull($stringInput->read());
+    }
 }

@@ -138,6 +138,10 @@ class LexerTest extends TestCase
                 "\"\x7f\"",
                 [Tokenizer::T_STRING, "\x7f", 1]
             ],
+            "string with escape sequence followed by text" => [
+                '"\t foo"',
+                [Tokenizer::T_STRING, "\t foo", 1]
+            ],
             "simple number" => [
                 '42',
                 [Tokenizer::T_NUMBER, "42", 1]
@@ -224,6 +228,14 @@ class LexerTest extends TestCase
                 '-',
                 "Line 1: Unexpected end of file."
             ],
+            "negative sign followed by non-digit" => [
+                '-a',
+                "Line 1: Unexpected 'a'."
+            ],
+            "number truncated after decimal point" => [
+                '0.',
+                "Line 1: Unexpected end of file."
+            ],
             "number with malformed fractional part" => [
                 '0.a',
                 "Line 1: Unexpected 'a'."
@@ -231,6 +243,14 @@ class LexerTest extends TestCase
             "number with malformed exponent" => [
                 '0.4eb',
                 "Line 1: Unexpected 'b'."
+            ],
+            "number with truncated exponent" => [
+                '0.4e',
+                "Line 1: Unexpected end of file."
+            ],
+            "number with truncated signed exponent" => [
+                '0.4e+',
+                "Line 1: Unexpected end of file."
             ],
             "invalid escape sequence" => [
                 '"\h"',
@@ -243,6 +263,10 @@ class LexerTest extends TestCase
             "malformed unicode escape sequence with multibyte character" => [
                 '"\u454' . "\u{1F418}\"",
                 "Line 1: Unexpected '\u{1F418}'."
+            ],
+            "truncated unicode escape sequence" => [
+                '"\u',
+                "Line 1: Unexpected end of file."
             ],
             "string with record separator control character" => [
                 "\"\x1e\"",
@@ -292,6 +316,10 @@ class LexerTest extends TestCase
                 "\u{1F418}",
                 "Line 1: Unexpected '\u{1F418}'."
             ],
+            "bare invalid UTF-8 byte, high out of range" => [
+                "\xFF",
+                "Line 1: Ill-formed UTF-8 sequence 0xFF."
+            ],
             "bare invalid UTF-8 first byte, two byte sequence" => [
                 "\xC0\x80",
                 "Line 1: Ill-formed UTF-8 sequence 0xC0 0x80."
@@ -299,6 +327,14 @@ class LexerTest extends TestCase
             "bare invalid UTF-8 two byte sequence, second byte not a continuation byte" => [
                 "\xE0\x00",
                 "Line 1: Ill-formed UTF-8 sequence 0xE0."
+            ],
+            "bare invalid UTF-8 four byte sequence, second byte high out of range" => [
+                "\xF4\x90\x80\x80",
+                "Line 1: Ill-formed UTF-8 sequence 0xF4 0x90 0x80 0x80."
+            ],
+            "string truncated at escape sequence" => [
+                '"\\',
+                "Line 1: Unexpected end of file."
             ]
         ];
     }

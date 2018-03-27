@@ -21,6 +21,17 @@ class StreamTest extends TestCase
         fclose($handle);
     }
 
+    public function testEmptyStreamInput()
+    {
+        $handle = fopen('php://memory','r+');
+        fwrite($handle, "");
+        rewind($handle);
+        $stream = new Stream($handle);
+
+        $this->assertNull($stream->read());
+        fclose($handle);
+    }
+
     public function testNotResourceFailure()
     {
         $this->expectException(InvalidArgumentException::class);
