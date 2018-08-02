@@ -3,12 +3,14 @@
 namespace pcrov\JsonReader;
 
 use pcrov\JsonReader\InputStream\IOException;
+use pcrov\JsonReader\InputStream\Psr7Stream;
 use pcrov\JsonReader\InputStream\Stream;
 use pcrov\JsonReader\InputStream\Uri;
 use pcrov\JsonReader\InputStream\StringInput;
 use pcrov\JsonReader\Parser\JsonParser;
 use pcrov\JsonReader\Parser\Lexer;
 use pcrov\JsonReader\Parser\Parser;
+use Psr\Http\Message\StreamInterface;
 
 class JsonReader
 {
@@ -101,6 +103,15 @@ class JsonReader
     public function open(string $uri)
     {
         $this->init(new JsonParser(new Lexer(new Uri($uri))));
+    }
+
+    /**
+     * @return void
+     * @throws IOException if a given stream is not readable.
+     */
+    public function psr7Stream(StreamInterface $stream)
+    {
+        $this->init(new JsonParser(new Lexer(new Psr7Stream($stream))));
     }
 
     /**

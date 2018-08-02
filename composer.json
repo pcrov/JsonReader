@@ -19,7 +19,8 @@
     "require": {
         "php": "^7.0",
         "ext-intl": "*",
-        "pcrov/unicode": "^0.1"
+        "pcrov/unicode": "^0.1",
+        "psr/http-message": "^1"
     },
     "require-dev": {
         "phpunit/phpunit": "^6.5",

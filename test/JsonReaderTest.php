@@ -4,6 +4,7 @@ namespace pcrov\JsonReader;
 
 use pcrov\JsonReader\Parser\Parser;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\StreamInterface;
 
 class JsonReaderTest extends TestCase
 {
@@ -72,6 +73,18 @@ class JsonReaderTest extends TestCase
         $this->assertNull($reader->name());
         $this->assertNull($reader->value());
         while ($reader->read());
+    }
+
+    public function testPsr7Stream()
+    {
+        $reader = $this->reader;
+        $psr7 = $this->createMock(StreamInterface::class);
+        $psr7->method("isReadable")->willReturn(true);
+        $reader->psr7Stream($psr7);
+        $this->assertSame(0, $reader->depth());
+        $this->assertSame(JsonReader::NONE, $reader->type());
+        $this->assertNull($reader->name());
+        $this->assertNull($reader->value());
     }
 
     public function testStream()
