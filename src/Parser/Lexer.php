@@ -450,7 +450,7 @@ final class Lexer implements Tokenizer
         );
     }
 
-    private function getIllFormedUtf8ExceptionMessage(string $string)
+    private function getIllFormedUtf8ExceptionMessage(string $string): string
     {
         return \sprintf(
             "Line %d: Ill-formed UTF-8 sequence" . \str_repeat(" 0x%X", \strlen($string)) . ".",
