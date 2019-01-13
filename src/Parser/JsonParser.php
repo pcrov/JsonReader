@@ -107,6 +107,7 @@ final class JsonParser implements Parser
                 goto value;
 
             case self::$stateDocumentEnd:
+                $names = [null];
                 if ($token[0] !== Tokenizer::T_EOF) {
                     throw new ParseException($this->getExceptionMessage($token));
                 }
