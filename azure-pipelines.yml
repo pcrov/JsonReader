@@ -24,3 +24,6 @@ steps:
 
 - script: composer install --no-interaction --prefer-dist
   displayName: 'composer install'
+
+- script: phpdbg -qrr vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
+  displayName: 'phpunit tests'
