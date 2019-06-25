@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 // Basic accept/reject tests on data from https://github.com/nst/JSONTestSuite
 class nst_JSONTestSuiteTest extends TestCase
 {
-    const DATA_DIR = __DIR__ . "/../../vendor/nst/JSONTestSuite/test_parsing/";
+    const DATA_DIR = __DIR__ . "/../../vendor/nst/jsontestsuite/test_parsing/";
 
     /**
      * @doesNotPerformAssertions
