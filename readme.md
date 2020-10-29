@@ -1,6 +1,6 @@
 # JsonReader
 
-[![Build Status](https://travis-ci.org/pcrov/JsonReader.svg?branch=master)](https://travis-ci.org/pcrov/JsonReader)
+[![Build Status](https://api.travis-ci.com/pcrov/JsonReader.svg?branch=master)](https://travis-ci.com/github/pcrov/JsonReader)
 [![Coverage Status](https://coveralls.io/repos/github/pcrov/JsonReader/badge.svg?branch=master)](https://coveralls.io/github/pcrov/JsonReader?branch=master)
 [![License](https://poser.pugx.org/pcrov/jsonreader/license)](https://github.com/pcrov/JsonReader/blob/master/LICENSE)
 [![Latest Stable Version](https://poser.pugx.org/pcrov/jsonreader/v/stable)](https://packagist.org/packages/pcrov/jsonreader)
