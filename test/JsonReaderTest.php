@@ -14,7 +14,7 @@ class JsonReaderTest extends TestCase
     /** @var \Traversable */
     protected $parser;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->reader = new JsonReader();
         $this->parser = new class implements Parser

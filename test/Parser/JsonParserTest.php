@@ -290,7 +290,7 @@ class JsonParserTest extends TestCase
         ];
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->tokenizer = new class() implements Tokenizer
         {

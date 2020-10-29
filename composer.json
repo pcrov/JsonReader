@@ -17,14 +17,14 @@
         }
     ],
     "require": {
-        "php": "^7.0",
+        "php": ">=7.3",
         "ext-ctype": "*",
         "ext-intl": "*",
         "pcrov/unicode": "^0.1",
         "psr/http-message": "^1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^6.5",
+        "phpunit/phpunit": "^9.4",
         "nst/jsontestsuite": "^1"
     },
     "autoload": {
