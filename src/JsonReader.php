@@ -15,23 +15,26 @@ use Psr\Http\Message\StreamInterface;
 class JsonReader
 {
     /* Node types */
-    const NONE = "NONE";
-    const STRING = "STRING";
-    const NUMBER = "NUMBER";
-    const BOOL = "BOOL";
-    const NULL = "NULL";
-    const ARRAY = "ARRAY";
-    const END_ARRAY = "END_ARRAY";
-    const OBJECT = "OBJECT";
-    const END_OBJECT = "END_OBJECT";
+    public const NONE = "NONE";
+    public const STRING = "STRING";
+    public const NUMBER = "NUMBER";
+    public const BOOL = "BOOL";
+    public const NULL = "NULL";
+    public const ARRAY = "ARRAY";
+    public const END_ARRAY = "END_ARRAY";
+    public const OBJECT = "OBJECT";
+    public const END_OBJECT = "END_OBJECT";
 
     /* Options */
-    const FLOATS_AS_STRINGS = 0b00000001;
+    public const FLOATS_AS_STRINGS = 0b00000001;
 
-    private static $endTypeMap = [
+    private const END_TYPE_MAP = [
         self::ARRAY => self::END_ARRAY,
         self::OBJECT => self::END_OBJECT
     ];
+
+    // Size of tuples read from the parser.
+    private const T_SIZE = 4;
 
     /**
      * @var Parser|null
@@ -39,9 +42,11 @@ class JsonReader
     private $parser;
 
     /**
-     * @var array[] Tuples from the parser, cached during tree building.
+     * @var array[] Tuples' contents from the parser, cached during tree building.
+     *              Cache is flattened to reduce array memory overhead.
      */
     private $cache = [];
+    private $cacheCursor = 0;
 
     /**
      * @var bool A fresh cache that hasn't been entered can be dropped entirely when calling next().
@@ -147,22 +152,21 @@ class JsonReader
     public function value()
     {
         $type = $this->type;
-        $value = &$this->value;
 
         if ($type === self::NUMBER) {
-            return $this->castNumber($value);
+            return $this->castNumber($this->value);
         }
 
-        if ($value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
+        if ($this->value === null && ($type === self::ARRAY || $type === self::OBJECT)) {
             if (empty($this->cache)) {
-                $value = $this->buildTree($type, true);
+                $this->value = $this->buildTree($type);
                 $this->cacheIsFresh = true;
             } else {
-                $value = $this->buildTree($type, false);
+                $this->value = $this->buildTree($type, true);
             }
         }
 
-        return $value;
+        return $this->value;
     }
 
     public function depth(): int
@@ -179,13 +183,14 @@ class JsonReader
             throw new Exception("Load data before trying to read.");
         }
 
+        // If we haven't already descended into reading from the cache it can be skipped entirely.
         if ($this->cacheIsFresh) {
             $this->cache = [];
             $this->cacheIsFresh = false;
         }
 
         $currentDepth = $this->depth;
-        $endType = self::$endTypeMap[$this->type] ?? self::NONE;
+        $endType = self::END_TYPE_MAP[$this->type] ?? self::NONE;
 
         while ($result = $this->read()) {
             if ($this->depth <= $currentDepth) {
@@ -217,16 +222,15 @@ class JsonReader
      */
     public function read(string $target = null): bool
     {
-        $parser = $this->parser;
-
-        if ($parser === null) {
+        if ($this->parser === null) {
             throw new Exception("Load data before trying to read.");
         }
 
         if (empty($this->cache)) {
-            $node = $parser->read();
+            $node = $this->parser->read();
         } else {
-            $node = \array_shift($this->cache);
+            $node = \array_splice($this->cache, 0, self::T_SIZE);
+            $this->cacheCursor = 0;
             $this->cacheIsFresh = false;
         }
 
@@ -235,12 +239,12 @@ class JsonReader
             return false;
         }
 
-        list (
+        [
             $this->type,
             $this->name,
             $this->value,
             $this->depth
-            ) = $node;
+        ] = $node;
 
         $result = true;
         if ($target !== null) {
@@ -263,24 +267,22 @@ class JsonReader
         $this->parser = null;
     }
 
-    private function buildTree(string $type, bool $writeCache): array
+    private function buildTree(string $type, bool $fromCache = false): array
     {
         \assert($type === self::ARRAY || $type === self::OBJECT);
 
-        $parser = $this->parser;
-        $cache = &$this->cache;
-        $endType = self::$endTypeMap[$type] ?? self::NONE;
+        $endType = self::END_TYPE_MAP[$type] ?? self::NONE;
         $result = [];
 
         while (true) {
-            if ($writeCache) {
-                $node = $parser->read();
-                $cache[] = $node;
+            if ($fromCache) {
+                $node = \array_slice($this->cache, $this->cacheCursor, self::T_SIZE);
+                $this->cacheCursor += self::T_SIZE;
             } else {
-                $node = \current($cache);
-                \next($cache);
+                $node = $this->parser->read();
+                \array_push($this->cache, ...$node);
             }
-            list ($type, $name, $value) = $node;
+            [$type, $name, $value] = $node;
 
             if ($type === $endType) {
                 break;
@@ -289,7 +291,7 @@ class JsonReader
             if ($type === self::NUMBER) {
                 $value = $this->castNumber($value);
             } elseif ($type === self::ARRAY || $type === self::OBJECT) {
-                $value = $this->buildTree($type, $writeCache);
+                $value = $this->buildTree($type, $fromCache);
             }
 
             if ($name !== null) {
@@ -321,6 +323,7 @@ class JsonReader
         $this->value = null;
         $this->depth = 0;
         $this->cache = [];
+        $this->cacheCursor = 0;
         $this->cacheIsFresh = false;
     }
 }
