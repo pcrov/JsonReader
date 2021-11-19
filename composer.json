@@ -18,7 +18,6 @@
     ],
     "require": {
         "php": ">=7.3",
-        "ext-ctype": "*",
         "ext-intl": "*",
         "pcrov/unicode": "^0.1",
         "psr/http-message": "^1"

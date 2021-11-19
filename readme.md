@@ -10,7 +10,7 @@ This is a streaming pull parser - like [XMLReader](http://php.net/xmlreader) but
 
 ## Requirements
 
-PHP 7.3 or higher with the Ctype and Intl extensions.
+PHP 7.3 or higher with the Intl extension.
 
 ## Installation
 
