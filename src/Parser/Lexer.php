@@ -79,7 +79,7 @@ final class Lexer implements Tokenizer
                     $offset++;
                     return [Tokenizer::T_STRING, $this->evaluateDoubleQuotedString(), $line];
                 default:
-                    if ($byte === "-" || \ctype_digit($byte)) {
+                    if (\strpos("-0123456789", $byte) !== false) {
                         return [Tokenizer::T_NUMBER, $this->scanNumber(), $line];
                     }
                     throw new ParseException($this->getExceptionMessage());
@@ -245,7 +245,7 @@ final class Lexer implements Tokenizer
         if ($byte === "0") {
             $offset++;
             $number .= $byte;
-        } elseif (\ctype_digit($byte)) {
+        } elseif (\strpos("123456789", $byte) !== false) {
             $number .= $this->pregScan($scanDigitsRegex);
         } else {
             throw new ParseException($this->getExceptionMessage());
