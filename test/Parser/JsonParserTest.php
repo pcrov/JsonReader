@@ -12,16 +12,14 @@ class JsonParserTest extends TestCase
     protected $tokenizer;
 
     /** @dataProvider provideTestParser */
-    public function testParser($input, $expected)
+    public function testParser($input, $expecteds)
     {
         $tokenizer = $this->tokenizer;
         $tokenizer->setTokens($input);
         $parser = new JsonParser($tokenizer);
 
-        $i = 0;
-        while (($node = $parser->read()) !== null) {
-            self::assertSame($expected[$i], $node);
-            $i++;
+        foreach ($expecteds as $expected) {
+            self::assertSame($expected, $parser->read());
         }
     }
 

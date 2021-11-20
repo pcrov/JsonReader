@@ -133,7 +133,7 @@ class JsonReaderTest extends TestCase
 
     public function testRead()
     {
-        $expected = [
+        $expecteds = [
             [
                 JsonReader::OBJECT,
                 null,
@@ -168,19 +168,18 @@ class JsonReaderTest extends TestCase
         $reader = $this->reader;
         $reader->init($this->parser);
 
-        $i = 0;
-        while ($reader->read()) {
-            $this->assertSame($expected[$i][0], $reader->type());
-            $this->assertSame($expected[$i][1], $reader->name());
-            $this->assertSame($expected[$i][2], $reader->value());
-            $this->assertSame($expected[$i][3], $reader->depth());
-            $i++;
+        foreach ($expecteds as $expected) {
+            $reader->read();
+            $this->assertSame($expected[0], $reader->type());
+            $this->assertSame($expected[1], $reader->name());
+            $this->assertSame($expected[2], $reader->value());
+            $this->assertSame($expected[3], $reader->depth());
         }
     }
 
     public function testReadWithOptionFloatAsString()
     {
-        $expected = [
+        $expecteds = [
             [
                 JsonReader::OBJECT,
                 null,
@@ -215,19 +214,18 @@ class JsonReaderTest extends TestCase
         $reader = new JsonReader(JsonReader::FLOATS_AS_STRINGS);
         $reader->init($this->parser);
 
-        $i = 0;
-        while ($reader->read()) {
-            $this->assertSame($expected[$i][0], $reader->type());
-            $this->assertSame($expected[$i][1], $reader->name());
-            $this->assertSame($expected[$i][2], $reader->value());
-            $this->assertSame($expected[$i][3], $reader->depth());
-            $i++;
+        foreach ($expecteds as $expected) {
+            $reader->read();
+            $this->assertSame($expected[0], $reader->type());
+            $this->assertSame($expected[1], $reader->name());
+            $this->assertSame($expected[2], $reader->value());
+            $this->assertSame($expected[3], $reader->depth());
         }
     }
 
     public function testReadName()
     {
-        $expected = [
+        $expecteds = [
             [JsonReader::NUMBER, 'number name', 42, 1],
             [JsonReader::NUMBER, 'number name', -43.0, 3],
             [JsonReader::NUMBER, 'number name', 0.44e-2, 1],
@@ -238,13 +236,12 @@ class JsonReaderTest extends TestCase
         $reader->read();
         $reader->read();
 
-        $i = 0;
-        while ($reader->read('number name')) {
-            $this->assertSame($expected[$i][0], $reader->type());
-            $this->assertSame($expected[$i][1], $reader->name());
-            $this->assertSame($expected[$i][2], $reader->value());
-            $this->assertSame($expected[$i][3], $reader->depth());
-            $i++;
+        foreach ($expecteds as $expected) {
+            $reader->read('number name');
+            $this->assertSame($expected[0], $reader->type());
+            $this->assertSame($expected[1], $reader->name());
+            $this->assertSame($expected[2], $reader->value());
+            $this->assertSame($expected[3], $reader->depth());
         }
     }
 
@@ -261,7 +258,7 @@ class JsonReaderTest extends TestCase
 
     public function testNext()
     {
-        $expected = [
+        $expecteds = [
             [JsonReader::STRING, 'string name', 'string value', 1],
             [JsonReader::NUMBER, 'number name', 42, 1],
             [JsonReader::BOOL, 'boolean true', true, 1],
@@ -277,14 +274,13 @@ class JsonReaderTest extends TestCase
         $reader->read();
         $reader->read();
 
-        $i = 0;
-        do {
-            $this->assertSame($expected[$i][0], $reader->type());
-            $this->assertSame($expected[$i][1], $reader->name());
-            $this->assertSame($expected[$i][2], $reader->value());
-            $this->assertSame($expected[$i][3], $reader->depth());
-            $i++;
-        } while ($reader->next());
+        foreach ($expecteds as $expected) {
+            $this->assertSame($expected[0], $reader->type());
+            $this->assertSame($expected[1], $reader->name());
+            $this->assertSame($expected[2], $reader->value());
+            $this->assertSame($expected[3], $reader->depth());
+            $reader->next();
+        }
     }
 
     public function testNextRootFalse()
@@ -297,7 +293,7 @@ class JsonReaderTest extends TestCase
 
     public function testNextNameOver()
     {
-        $expected = [
+        $expecteds = [
             [JsonReader::NUMBER, 'number name', 42, 1],
             [JsonReader::NUMBER, 'number name', 0.44e-2, 1],
         ];
@@ -307,13 +303,12 @@ class JsonReaderTest extends TestCase
         $reader->read();
         $reader->read();
 
-        $i = 0;
-        while ($reader->next('number name')) {
-            $this->assertSame($expected[$i][0], $reader->type());
-            $this->assertSame($expected[$i][1], $reader->name());
-            $this->assertSame($expected[$i][2], $reader->value());
-            $this->assertSame($expected[$i][3], $reader->depth());
-            $i++;
+        foreach ($expecteds as $expected) {
+            $reader->next('number name');
+            $this->assertSame($expected[0], $reader->type());
+            $this->assertSame($expected[1], $reader->name());
+            $this->assertSame($expected[2], $reader->value());
+            $this->assertSame($expected[3], $reader->depth());
         }
     }
 
