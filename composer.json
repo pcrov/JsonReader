@@ -23,7 +23,7 @@
         "psr/http-message": "^1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.4",
+        "phpunit/phpunit": "^9.5",
         "nst/jsontestsuite": "^1"
     },
     "autoload": {
