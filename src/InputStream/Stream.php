@@ -6,7 +6,7 @@ use pcrov\JsonReader\InvalidArgumentException;
 
 final class Stream implements InputStream
 {
-    const CHUNK_SIZE = 8192;
+    public const CHUNK_SIZE = 8192;
 
     private $handle;
 

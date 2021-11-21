@@ -6,10 +6,7 @@ use pcrov\JsonReader\JsonReader;
 
 final class JsonParser implements Parser
 {
-    /**
-     * @var array Map of token to node types.
-     */
-    private static $tokenTypeMap = [
+    private const TOKEN_TYPE_MAP = [
         Tokenizer::T_STRING => JsonReader::STRING,
         Tokenizer::T_NUMBER => JsonReader::NUMBER,
         Tokenizer::T_TRUE => JsonReader::BOOL,
@@ -21,15 +18,15 @@ final class JsonParser implements Parser
         Tokenizer::T_END_OBJECT => JsonReader::END_OBJECT
     ];
 
-    private static $stateDocumentEnd = 0;
-    private static $stateDocumentStart = 1;
-    private static $stateAfterArrayStart = 2;
-    private static $stateAfterArrayMember = 3;
-    private static $stateAfterObjectStart = 4;
-    private static $stateAfterObjectMember = 5;
+    private const STATE_DOCUMENT_END = 0;
+    private const STATE_DOCUMENT_START = 1;
+    private const STATE_AFTER_ARRAY_START = 2;
+    private const STATE_AFTER_ARRAY_MEMBER = 3;
+    private const STATE_AFTER_OBJECT_START = 4;
+    private const STATE_AFTER_OBJECT_MEMBER = 5;
 
-    private static $inArray = 1;
-    private static $inObject = 2;
+    private const IN_ARRAY = 1;
+    private const IN_OBJECT = 2;
 
     /**
      * @var Tokenizer
@@ -44,7 +41,7 @@ final class JsonParser implements Parser
     public function __construct(Tokenizer $tokenizer)
     {
         $this->tokenizer = $tokenizer;
-        $this->state = self::$stateDocumentStart;
+        $this->state = self::STATE_DOCUMENT_START;
     }
 
     /**
@@ -61,16 +58,16 @@ final class JsonParser implements Parser
         $token = $tokenizer->read();
 
         switch ($state) {
-            case self::$stateAfterArrayStart:
+            case self::STATE_AFTER_ARRAY_START:
                 if ($token[0] === Tokenizer::T_END_ARRAY) {
                     goto end_of_array_or_object;
                 }
 
                 $names[$depth] = null;
-                $state = self::$stateAfterArrayMember;
+                $state = self::STATE_AFTER_ARRAY_MEMBER;
                 goto value;
 
-            case self::$stateAfterArrayMember:
+            case self::STATE_AFTER_ARRAY_MEMBER:
                 if ($token[0] === Tokenizer::T_END_ARRAY) {
                     goto end_of_array_or_object;
                 }
@@ -82,15 +79,15 @@ final class JsonParser implements Parser
                 $token = $tokenizer->read();
                 goto value;
 
-            case self::$stateAfterObjectStart:
+            case self::STATE_AFTER_OBJECT_START:
                 if ($token[0] === Tokenizer::T_END_OBJECT) {
                     goto end_of_array_or_object;
                 }
 
-                $state = self::$stateAfterObjectMember;
+                $state = self::STATE_AFTER_OBJECT_MEMBER;
                 goto object_member;
 
-            case self::$stateAfterObjectMember:
+            case self::STATE_AFTER_OBJECT_MEMBER:
                 if ($token[0] === Tokenizer::T_END_OBJECT) {
                     goto end_of_array_or_object;
                 }
@@ -102,11 +99,11 @@ final class JsonParser implements Parser
                 $token = $tokenizer->read();
                 goto object_member;
 
-            case self::$stateDocumentStart:
-                $state = self::$stateDocumentEnd;
+            case self::STATE_DOCUMENT_START:
+                $state = self::STATE_DOCUMENT_END;
                 goto value;
 
-            case self::$stateDocumentEnd:
+            case self::STATE_DOCUMENT_END:
                 $names = [null];
                 if ($token[0] !== Tokenizer::T_EOF) {
                     throw new ParseException($this->getExceptionMessage($token));
@@ -133,16 +130,16 @@ final class JsonParser implements Parser
             \array_pop($stack);
             $depth--;
             switch (\end($stack)) {
-                case self::$inArray:
-                    $state = self::$stateAfterArrayMember;
+                case self::IN_ARRAY:
+                    $state = self::STATE_AFTER_ARRAY_MEMBER;
                     break;
-                case self::$inObject:
-                    $state = self::$stateAfterObjectMember;
+                case self::IN_OBJECT:
+                    $state = self::STATE_AFTER_OBJECT_MEMBER;
                     break;
                 default:
-                    $state = self::$stateDocumentEnd;
+                    $state = self::STATE_DOCUMENT_END;
             }
-            return [self::$tokenTypeMap[$token[0]], $names[$depth], $token[1], $depth];
+            return [self::TOKEN_TYPE_MAP[$token[0]], $names[$depth], $token[1], $depth];
         }
 
         value: {
@@ -155,25 +152,25 @@ final class JsonParser implements Parser
                 case Tokenizer::T_NULL:
                     break;
                 case Tokenizer::T_BEGIN_ARRAY:
-                    $state = self::$stateAfterArrayStart;
-                    $stack[] = self::$inArray;
+                    $state = self::STATE_AFTER_ARRAY_START;
+                    $stack[] = self::IN_ARRAY;
                     $depth++;
                     break;
                 case Tokenizer::T_BEGIN_OBJECT:
-                    $state = self::$stateAfterObjectStart;
-                    $stack[] = self::$inObject;
+                    $state = self::STATE_AFTER_OBJECT_START;
+                    $stack[] = self::IN_OBJECT;
                     $depth++;
                     break;
                 default:
                     throw new ParseException($this->getExceptionMessage($token));
             }
-            return [self::$tokenTypeMap[$token[0]], $names[$currentDepth], $token[1], $currentDepth];
+            return [self::TOKEN_TYPE_MAP[$token[0]], $names[$currentDepth], $token[1], $currentDepth];
         }
     }
 
     private function getExceptionMessage(array $token): string
     {
-        list ($tokenType, , $tokenLine) = $token;
+        [$tokenType, , $tokenLine] = $token;
 
         if ($tokenType === Tokenizer::T_EOF) {
             return \sprintf(

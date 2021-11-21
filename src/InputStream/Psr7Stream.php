@@ -6,7 +6,7 @@ use Psr\Http\Message\StreamInterface;
 
 final class Psr7Stream implements InputStream
 {
-    const CHUNK_SIZE = 8192;
+    public const CHUNK_SIZE = 8192;
 
     private $stream;
 
