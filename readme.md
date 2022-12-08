@@ -2,7 +2,6 @@
 
 
 [![CI Status](https://github.com/pcrov/JsonReader/workflows/CI/badge.svg)](https://github.com/pcrov/JsonReader/actions?query=workflow%3ACI)
-[![Coverage Status](https://coveralls.io/repos/github/pcrov/JsonReader/badge.svg?branch=master)](https://coveralls.io/github/pcrov/JsonReader?branch=master)
 [![License](https://poser.pugx.org/pcrov/jsonreader/license)](https://github.com/pcrov/JsonReader/blob/master/LICENSE)
 [![Latest Stable Version](https://poser.pugx.org/pcrov/jsonreader/v/stable)](https://packagist.org/packages/pcrov/jsonreader)
 

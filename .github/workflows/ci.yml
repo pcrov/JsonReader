@@ -39,11 +39,4 @@ jobs:
         run: composer update --no-ansi --no-interaction --no-progress --prefer-dist
 
       - name: Run tests
-        run: vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
-
-      - name: Upload coverage results to Coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          composer require --no-ansi --no-interaction --no-progress --prefer-dist php-coveralls/php-coveralls
-          php vendor/bin/php-coveralls -v
+        run: vendor/bin/phpunit --coverage-text
