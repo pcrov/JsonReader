@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['7.3', '7.4', '8.0', '8.1']
+        php-versions: ['7.3', '7.4', '8.0', '8.1', '8.2']
     runs-on: ubuntu-latest
     name: PHP ${{ matrix.php-versions }}
     steps:
@@ -39,11 +39,4 @@ jobs:
         run: composer update --no-ansi --no-interaction --no-progress --prefer-dist
 
       - name: Run tests
-        run: vendor/bin/phpunit --coverage-text --coverage-clover build/logs/clover.xml
-
-      - name: Upload coverage results to Coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          composer require --no-ansi --no-interaction --no-progress --prefer-dist php-coveralls/php-coveralls
-          php vendor/bin/php-coveralls -v
+        run: vendor/bin/phpunit --coverage-text
