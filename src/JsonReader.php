@@ -177,7 +177,7 @@ class JsonReader
     /**
      * @throws Exception
      */
-    public function next(string $target = null): bool
+    public function next(?string $target = null): bool
     {
         if ($this->parser === null) {
             throw new Exception("Load data before trying to read.");
@@ -220,7 +220,7 @@ class JsonReader
     /**
      * @throws Exception
      */
-    public function read(string $target = null): bool
+    public function read(?string $target = null): bool
     {
         if ($this->parser === null) {
             throw new Exception("Load data before trying to read.");
